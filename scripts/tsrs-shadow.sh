@@ -5,13 +5,22 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
-TSRS="${TSRS:-$ROOT/node_modules/.bin/tsrs}"  # override only to test the mismatch path
-[ -x "$TSRS" ] || { echo "tsrs is not installed (pnpm install)" >&2; exit 2; }
+# tsrs stays out of package.json and the lockfile, so the gating `check` job never installs an experimental binary. The
+# exact version lives here; it is installed once into a cache dir. TSRS overrides the binary (CI's temp dir, or a fake to
+# test the mismatch path).
+TSRS_VERSION=0.18.0-ts7.1.0-dev.20260929
+if [ -z "${TSRS:-}" ]; then
+  cache="${TSRS_CACHE:-${TMPDIR:-/tmp}/tsrs-$TSRS_VERSION}"
+  [ -x "$cache/node_modules/.bin/tsrs" ] || npm install --silent --no-save --no-package-lock --prefix "$cache" "tsrs@$TSRS_VERSION" >&2
+  TSRS="$cache/node_modules/.bin/tsrs"
+fi
+[ -x "$TSRS" ] || { echo "tsrs not found at $TSRS" >&2; exit 2; }
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
 # [file(line,col): ]error TSnnnn, sorted; location-less errors (TS5083, TS18003, ...) are kept. Message text is
 # ignored: wording may differ between versions.
-diags() { grep -oE '^([^(]+\([0-9]+,[0-9]+\): )?error TS[0-9]+' | sort || true; }
+# The path match is greedy, so paths containing parentheses (e.g. a `(routes)` dir) still parse.
+diags() { grep -oE '^(.+\([0-9]+,[0-9]+\): )?error TS[0-9]+' | sort || true; }
 now() { [ -n "${EPOCHREALTIME:-}" ] && echo "${EPOCHREALTIME/,/.}" || echo 0; }
 
 echo "### tsrs shadow type-check"
@@ -35,6 +44,10 @@ for cfg in packages/*/tsconfig.json packages/*/tsconfig.build.json examples/*/ts
   t0=$(now); run "$tsc" "$TMP/tsc"; t1=$(now); run "$TSRS" "$TMP/tsrs"; t2=$(now)
   c1=$(cat "$TMP/tsc.code"); c2=$(cat "$TMP/tsrs.code")
   if cmp -s "$TMP/tsc" "$TMP/tsrs" && [ "$c1" = "$c2" ]; then match=yes; else match="**no**"; status=1; fi
+  # A non-zero exit with no parsed `error TSnnnn` (panic, bad args, uncoded config error) is never parity.
+  for t in tsc tsrs; do
+    if [ "$(cat "$TMP/$t.code")" != 0 ] && [ ! -s "$TMP/$t" ]; then match="**no** (unparsed $t failure)"; status=1; fi
+  done
   secs() { awk -v a="$1" -v b="$2" 'BEGIN { if (a == 0) print "-"; else printf "%.2f", b - a }'; }
   echo "| \`$cfg\` | $(wc -l < "$TMP/tsc" | tr -d ' ') (exit $c1) | $(wc -l < "$TMP/tsrs" | tr -d ' ') (exit $c2) | $match | $(secs "$t0" "$t1") | $(secs "$t1" "$t2") |"
   if [ "$match" != yes ]; then
