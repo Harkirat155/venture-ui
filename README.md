@@ -33,6 +33,7 @@ pnpm build         # all packages in dependency order, then the example app
 pnpm typecheck     # tsc in every package + `astryx integration check --strict` for @venture-ui/ui
 pnpm theme:check   # the committed built theme in examples/minimal-product matches its source (run after pnpm build)
 pnpm size          # size-limit budget for the example's built JS (run after pnpm build)
+pnpm typecheck:tsrs # shadow check: tsrs vs tsc diagnostics per tsconfig, reports only (run after pnpm build)
 ```
 
 After changing `theme.ts` or a token, run `pnpm build && pnpm theme:build` and commit the regenerated
