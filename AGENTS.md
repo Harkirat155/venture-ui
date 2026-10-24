@@ -35,11 +35,11 @@ Every component PR follows this shape, so the next one costs one folder, one sto
    full-page screenshot. It runs in light and dark at 390 and 1280 px (four Playwright projects named `light-390`, ...)
    with reduced motion, UTC and `en-US` emulated. Put interaction tests in `e2e/tests/<Name>.spec.ts`, with an explicit
    timeout (`tests/budget.ts`) and axe on the states a user can reach (an open disclosure, say).
-5. **Baselines** are Chromium on linux/amd64 in the official Playwright image, never macOS and never arm64 (the same tag
-   ships a different Chromium per CPU). `pnpm e2e` runs there for you (Docker needed; `DOCKER=/path/to/docker` if it is
-   not on `PATH`; it emulates amd64 on Apple silicon, slowly), and `pnpm e2e --update-snapshots` rewrites
-   `e2e/snapshots/*-linux.png`. Without Docker: push, and when the CI `e2e` job fails download its `e2e-baselines`
-   artifact. Either way, review the images and commit them.
+5. **Baselines** are Linux Chromium in the official Playwright image, never macOS. `pnpm e2e` runs there for you (Docker
+   needed; `DOCKER=/path/to/docker` if it is not on `PATH`), and `pnpm e2e --update-snapshots` rewrites
+   `e2e/snapshots/*-linux.png`. CI is linux/amd64; the baselines were made on arm64 and pass there at Playwright's default
+   threshold, and `E2E_PLATFORM=linux/amd64` makes the local run match CI's CPU exactly (emulated, slow). Without Docker,
+   push, and when the CI `e2e` job fails download its `e2e-baselines` artifact. Either way, review the images and commit them.
 6. **Size.** Add an entry to `.size-limit.json` (the component's `dist` file, `"import": "{ <Name> }"`, react external,
    limit = measured + 5%). `examples/minimal-product` must not grow: it does not import the component.
 7. **Dependencies and notices.** A third-party package goes in `THIRD_PARTY_NOTICES` and in the `package.json` of the

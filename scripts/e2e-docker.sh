@@ -6,9 +6,9 @@
 # node_modules or dist, which are built for this machine), then installed and built there, so nothing in the host's
 # node_modules is touched. Snapshots and test results are bind-mounted back out. DOCKER overrides the docker binary.
 #
-# The image is pinned to linux/amd64, the CPU of CI's ubuntu-latest: the same tag ships a different Chromium build per
-# architecture, so baselines made on Apple silicon (arm64) would not match CI. On an arm64 host this runs emulated and
-# is slower. E2E_PLATFORM overrides it, for a machine whose docker cannot emulate (expect CI to disagree then).
+# The image is the host's own architecture unless E2E_PLATFORM says otherwise (E2E_PLATFORM=linux/amd64 on Apple
+# silicon, slower because it is emulated). CI is linux/amd64; baselines made on arm64 passed there at Playwright's
+# default threshold, and CI is the arbiter (see AGENTS.md for refreshing them from its artifact).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DOCKER="${DOCKER:-docker}"
@@ -33,7 +33,7 @@ pnpm e2e "$@"
 # COPYFILE_DISABLE: macOS tar would otherwise add ._* metadata files, which Playwright would try to load as tests.
 COPYFILE_DISABLE=1 tar --exclude=node_modules --exclude=dist --exclude=.git --exclude=playwright-report \
   --exclude=e2e/snapshots --exclude=e2e/test-results -cf - . |
-  "$DOCKER" run --rm -i --init --ipc=host --platform "${E2E_PLATFORM:-linux/amd64}" \
+  "$DOCKER" run --rm -i --init --ipc=host ${E2E_PLATFORM:+--platform "$E2E_PLATFORM"} \
     -v venture-ui-pnpm-store:/pnpm-store \
     -v "$PWD/e2e/snapshots:/work/e2e/snapshots" \
     -v "$PWD/e2e/test-results:/work/e2e/test-results" \
