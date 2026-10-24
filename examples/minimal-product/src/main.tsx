@@ -9,7 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { exampleTheme } from './example.js';
 
 const root = document.getElementById('root');
-if (!root) throw new Error('index.html is missing <main id="root">');
+if (!root) throw new Error('index.html has no #root element');
 
 createRoot(root).render(
   <StrictMode>

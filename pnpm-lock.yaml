@@ -38,6 +38,9 @@ importers:
       '@astryxdesign/theme-neutral':
         specifier: 0.7.4
         version: 0.7.4(@astryxdesign/core@0.7.4(@stylexjs/stylex@0.19.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@types/react@19.3.0)(react@19.3.1)
+      '@stylexjs/stylex':
+        specifier: 0.19.1
+        version: 0.19.1
       '@venture-ui/theme-kit':
         specifier: workspace:*
         version: link:../../packages/theme-kit

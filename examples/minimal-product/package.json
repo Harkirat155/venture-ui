@@ -11,6 +11,7 @@
   "dependencies": {
     "@astryxdesign/core": "0.7.4",
     "@astryxdesign/theme-neutral": "0.7.4",
+    "@stylexjs/stylex": "0.19.1",
     "@venture-ui/theme-kit": "workspace:*",
     "@venture-ui/tokens": "workspace:*",
     "@venture-ui/ui": "workspace:*",

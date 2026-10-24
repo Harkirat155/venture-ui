@@ -38,6 +38,7 @@ packages:
   "dependencies": {
     "@astryxdesign/core": "0.7.4",
     "@astryxdesign/theme-neutral": "0.7.4",
+    "@stylexjs/stylex": "0.19.1",
     "@venture-ui/theme-kit": "workspace:*",
     "@venture-ui/tokens": "workspace:*",
     "@venture-ui/ui": "workspace:*"
@@ -121,7 +122,7 @@ import { createRoot } from 'react-dom/client';
 import { exampleTheme } from './example.js';
 
 const root = document.getElementById('root');
-if (!root) throw new Error('index.html is missing <main id="root">');
+if (!root) throw new Error('index.html has no #root element');
 
 createRoot(root).render(
   <StrictMode>
@@ -136,7 +137,7 @@ createRoot(root).render(
 
 - Import the built theme (`./example.js` and `./example.css`), never `theme.ts`: the source would pull `defineTheme` and
   the palette generator into the bundle.
-- No StyleX compiler or Vite plugin is needed; Astryx ships compiled CSS.
+- No StyleX compiler or Vite plugin is needed; Astryx ships compiled CSS. (`@stylexjs/stylex`, the runtime, is a peer dependency of `@astryxdesign/core`, so the product declares it.)
 - A production build must really be one. With `NODE_ENV=development` exported in the shell, Vite keeps React's
   development forms; the example's `vite.config.ts` forces `NODE_ENV=production` for `vite build`.
 - CSS custom properties from `@venture-ui/tokens/tokens.css` are prefixed `--vui-`. They are for surfaces that do not
