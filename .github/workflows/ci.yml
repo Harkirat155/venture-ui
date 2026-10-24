@@ -33,3 +33,22 @@ jobs:
       - run: pnpm theme:check
       # Tree-shaking budget for the built example app.
       - run: pnpm size
+
+  # Shadow type-check with tsrs, the experimental Rust port of the TypeScript checker (issue #2).
+  # Reports only: tsc in `check` stays the gate and the emitter, so this job never blocks a merge.
+  typecheck-tsrs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Package typechecks read their workspace dependencies' dist output.
+      - run: pnpm build
+      - run: pnpm typecheck:tsrs | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash

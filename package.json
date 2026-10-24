@@ -14,13 +14,15 @@
     "test": "vitest run",
     "theme:build": "astryx theme build examples/minimal-product/src/theme.ts",
     "theme:check": "astryx theme build examples/minimal-product/src/theme.ts --check",
-    "size": "size-limit"
+    "size": "size-limit",
+    "typecheck:tsrs": "bash scripts/tsrs-shadow.sh"
   },
   "devDependencies": {
     "@astryxdesign/cli": "0.7.4",
     "@astryxdesign/core": "0.7.4",
     "@size-limit/preset-app": "14.3.0",
     "size-limit": "14.3.0",
+    "tsrs": "0.18.0-ts7.1.0-dev.20260929",
     "vitest": "5.0.5"
   }
 }
