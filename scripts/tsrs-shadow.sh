@@ -33,7 +33,7 @@ echo "| tsconfig | tsc errors | tsrs errors | match | tsc s | tsrs s |"
 echo "|---|---|---|---|---|---|"
 status=0
 checked=0
-for cfg in packages/*/tsconfig.json packages/*/tsconfig.build.json examples/*/tsconfig.json examples/*/tsconfig.node.json; do
+for cfg in packages/*/tsconfig.json packages/*/tsconfig.build.json examples/*/tsconfig.json examples/*/tsconfig.node.json e2e/tsconfig.json; do
   [ -f "$cfg" ] || continue
   dir="$(dirname "$cfg")"; base="$(basename "$cfg")"
   tsc="$ROOT/$dir/node_modules/.bin/tsc"

@@ -34,6 +34,33 @@ jobs:
       # Tree-shaking budget for the built example app.
       - run: pnpm size
 
+  # Playwright against the built gallery: a screenshot and an axe check per story, in light and dark, at 390 and
+  # 1280 px. Screenshot baselines (e2e/snapshots/*-linux.png) come from Chromium in the official Playwright image, so
+  # this job runs in that same image, and `pnpm e2e` locally re-runs itself in it (scripts/e2e-docker.sh). The image tag
+  # must match @playwright/test in e2e/package.json; a mismatch fails loudly ("Executable doesn't exist").
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    env:
+      E2E_IN_DOCKER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      # The gallery and the packages it imports; e2e reads examples/gallery/dist.
+      - run: pnpm --filter "@venture-ui/e2e..." build
+      - run: pnpm e2e
+      # The HTML report holds the expected, actual and diff image of every failed screenshot.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+
   # Shadow type-check with tsrs, the experimental Rust port of the TypeScript checker (issue #2).
   # Reports only: tsc in `check` stays the gate and the emitter. Never make this a required status. tsrs is installed by
   # the script into the runner's temp dir, not from the lockfile, so `check` never installs it.

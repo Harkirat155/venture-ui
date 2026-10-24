@@ -3,7 +3,17 @@
     "name": "examples/minimal-product JS (gzip)",
     "path": "examples/minimal-product/dist/assets/*.js",
     "gzip": true,
+    "disablePlugins": ["@size-limit/esbuild"],
     "running": false,
     "limit": "132271 B"
+  },
+  {
+    "name": "@venture-ui/ui/Timeline, with the Astryx parts it pulls in (gzip, react external)",
+    "path": "packages/ui/dist/Timeline/Timeline.js",
+    "import": "{ Timeline }",
+    "ignore": ["react", "react-dom", "react/jsx-runtime"],
+    "gzip": true,
+    "running": false,
+    "limit": "54467 B"
   }
 ]

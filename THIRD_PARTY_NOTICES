@@ -29,4 +29,8 @@ Style Dictionary                  Apache-2.0  https://github.com/amzn/style-dict
 Vite, @vitejs/plugin-react        MIT
 Vitest                            MIT
 TypeScript                        Apache-2.0
-size-limit                        MIT
+size-limit, @size-limit/*         MIT
+Playwright (@playwright/test)     Apache-2.0  https://github.com/microsoft/playwright
+axe-core (@axe-core/playwright)   MPL-2.0     https://github.com/dequelabs/axe-core-npm
+  Test time only. Nothing is copied from it, and none of it is bundled or published.
+Testing Library, jsdom            MIT
