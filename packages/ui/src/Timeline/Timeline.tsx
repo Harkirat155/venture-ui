@@ -25,7 +25,7 @@ export type TimelineItem = {
   actor?: ReactNode;
   /** Outcome of the event. It is always shown with a visible label, never as colour alone. */
   status?: StatusDotVariant;
-  /** One line saying what happened. */
+  /** One line saying what happened. It must contain text: the disclosure button is named from it. */
   title: ReactNode;
   /** Detail shown behind a disclosure button, collapsed by default. */
   body?: ReactNode;
@@ -37,7 +37,7 @@ export type TimelineLabels = {
   empty: string;
   /** Visible text of the button that discloses an item's body. */
   details: string;
-  /** What a screen reader hears for that button, given the item's title as plain text. */
+  /** What a screen reader hears for that button, given the item's title as plain text. Keep the visible `details` text in it. */
   detailsFor: (title: string) => string;
   /** Heading of the group for items whose time does not parse, when grouped by day. */
   unknownDay: string;
@@ -177,7 +177,12 @@ function TimelineEntry({
           </Text>
           <HStack gap={2} align="center" wrap="wrap">
             {item.actor ? <Text type="supporting">{item.actor}</Text> : null}
-            <Timestamp value={item.time} format={timeFormat} hasTooltip={false} />
+            {/* Timestamp renders nothing for a time it cannot parse; show the raw text rather than lose it. */}
+            {Number.isNaN(Date.parse(item.time)) ? (
+              <Text type="supporting">{item.time}</Text>
+            ) : (
+              <Timestamp value={item.time} format={timeFormat} hasTooltip={false} />
+            )}
             {label ? <Text type="supporting">{label}</Text> : null}
           </HStack>
           {item.body ? (

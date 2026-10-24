@@ -14,6 +14,7 @@ test('a body is hidden until its Details button is pressed, by mouse or keyboard
   const button = page.getByRole('button', { name: /^Details for Deploy finished/ });
   const body = page.getByText('Build 4821 reached production');
 
+  await expect(button).toHaveJSProperty('tagName', 'BUTTON');
   await expect(button).toHaveAttribute('aria-expanded', 'false');
   await expect(body).toBeHidden();
 
@@ -34,7 +35,7 @@ test('a body is hidden until its Details button is pressed, by mouse or keyboard
   await expect(body).toBeHidden();
 });
 
-test('Tab walks the Details buttons in order and nothing else is focusable', async ({ page }) => {
+test('Tab walks the Details buttons in order, and a collapsed body adds no tab stop', async ({ page }) => {
   await openStory(page, 'Default');
   // The story page has one link ("All stories") before the feed.
   await page.keyboard.press('Tab');
@@ -43,6 +44,9 @@ test('Tab walks the Details buttons in order and nothing else is focusable', asy
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: new RegExp(`^Details for ${title}`) })).toBeFocused();
   }
+  // One more Tab leaves the page content: no further stop inside the feed, collapsed bodies included.
+  await page.keyboard.press('Tab');
+  await expect(page.locator('main :focus')).toHaveCount(0);
 });
 
 test('with every body open there are still no axe violations, and the page fits', async ({ page }) => {
@@ -54,12 +58,24 @@ test('with every body open there are still no axe violations, and the page fits'
   await expect(page).toHaveScreenshot('Timeline-Default-expanded.png', { fullPage: true });
 });
 
-test('grouped by day: a heading per day, each labelling the list under it', async ({ page }) => {
+test('grouped by day: a heading per day, each labelling the ordered list under it', async ({ page }) => {
   await openStory(page, 'GroupedByDay');
   const headings = page.getByRole('heading', { level: 2 });
   await expect(headings).toHaveText(['Monday, March 2, 2026', 'Sunday, March 1, 2026']);
-  await expect(page.getByRole('list', { name: 'Monday, March 2, 2026' }).getByRole('listitem')).toHaveCount(3);
-  await expect(page.getByRole('list', { name: 'Sunday, March 1, 2026' }).getByRole('listitem')).toHaveCount(2);
+  const monday = page.getByRole('list', { name: 'Monday, March 2, 2026' });
+  const sunday = page.getByRole('list', { name: 'Sunday, March 1, 2026' });
+  await expect(monday).toHaveJSProperty('tagName', 'OL');
+  await expect(sunday).toHaveJSProperty('tagName', 'OL');
+  await expect(monday.getByRole('listitem')).toHaveCount(3);
+  await expect(sunday.getByRole('listitem')).toHaveCount(2);
+});
+
+test('each time is a <time> element carrying its ISO value', async ({ page }) => {
+  await openStory(page, 'Default');
+  const times = page.locator('main time[datetime]');
+  await expect(times).toHaveCount(5);
+  await expect(times.first()).toBeVisible();
+  await expect(times.first()).toHaveAttribute('datetime', '2026-03-02T09:42:00.000Z');
 });
 
 test('every status is shown as words next to its dot', async ({ page }) => {

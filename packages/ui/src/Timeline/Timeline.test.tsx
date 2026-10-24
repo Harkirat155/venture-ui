@@ -27,7 +27,7 @@ describe('Timeline structure', () => {
 
   it('puts each time in a <time> element with its ISO value', () => {
     const { container } = render(<Timeline items={items} />);
-    const times = [...container.querySelectorAll('time')].map((t) => t.getAttribute('datetime'));
+    const times = [...container.querySelectorAll('time')].map((t) => new Date(t.getAttribute('datetime') ?? '').toISOString());
     expect(times).toEqual(['2026-03-02T09:30:00.000Z', '2026-03-02T08:00:00.000Z', '2026-03-01T23:30:00.000Z']);
   });
 
@@ -111,10 +111,12 @@ describe('Timeline groupBy day', () => {
     ]);
   });
 
-  it('gathers items whose time does not parse under an unknown-date heading', () => {
-    render(<Timeline items={[{ id: 'x', time: 'not a date', title: 'Odd one' }]} groupBy="day" />);
+  it('gathers items whose time does not parse under an unknown-date heading, showing the raw text and no <time>', () => {
+    const { container } = render(<Timeline items={[{ id: 'x', time: 'not a date', title: 'Odd one' }]} groupBy="day" />);
     expect(screen.getByRole('heading', { name: 'Unknown date' })).toBeTruthy();
     expect(screen.getByText('Odd one')).toBeTruthy();
+    expect(screen.getByText('not a date')).toBeTruthy();
+    expect(container.querySelector('time')).toBeNull();
   });
 
   it('numbers the heading level from headingLevel', () => {

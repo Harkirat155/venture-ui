@@ -103,7 +103,7 @@ export default {
       name: 'labels',
       type: 'Partial<TimelineLabels>',
       description:
-        'Overrides for the built-in English text, to translate or reword it. Anything you leave out keeps its default; a reworded details also rewords detailsFor. TimelineLabels is { empty: string; details: string; detailsFor: (title: string) => string; unknownDay: string; status: Partial<Record<StatusDotVariant, string>> }. The defaults are "No activity yet", "Details", "Details for <title>", "Unknown date", and Success, Warning, Error, Info, Neutral for the five statuses.',
+        'Overrides for the built-in English text, to translate or reword it. Anything you leave out keeps its default; a reworded details also rewords detailsFor. A detailsFor you write must keep the visible details text in it, so voice-control users can say what they see. TimelineLabels is { empty: string; details: string; detailsFor: (title: string) => string; unknownDay: string; status: Partial<Record<StatusDotVariant, string>> }. The defaults are "No activity yet", "Details", "Details for <title>", "Unknown date", and Success, Warning, Error, Info, Neutral for the five statuses.',
     },
   ],
   examples: [
@@ -122,9 +122,16 @@ export default {
     },
     {
       label: 'Flat list with translated text',
-      code: `<Timeline
-  items={events}
-  labels={{empty: 'Noch keine Aktivität', details: 'Details', detailsFor: (title) => 'Details zu ' + title, status: {success: 'Erfolgreich', error: 'Fehler'}}}
+      code: `import {Timeline} from '@venture-ui/ui/Timeline';
+
+<Timeline
+  items={[{id: 'e1', time: '2026-03-02T09:30:00Z', status: 'success', title: 'Bereitstellung abgeschlossen', body: 'Build 4821'}]}
+  labels={{
+    empty: 'Noch keine Aktivität',
+    details: 'Details',
+    detailsFor: (title) => 'Details zu ' + title,
+    status: {success: 'Erfolgreich', error: 'Fehler'},
+  }}
 />`,
     },
   ],

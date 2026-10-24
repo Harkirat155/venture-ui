@@ -21,3 +21,16 @@ test('the project runs with its colour scheme, reduced motion, UTC and en-US', a
   expect(env.locale).toBe('en-US');
   expect(String(env.width)).toBe(testInfo.project.name.split('-')[1]);
 });
+
+// The scheme must reach the pixels: if Theme ignored it, light and dark projects would render the same page and
+// the dark axe run would prove nothing.
+test('the page background is light in light projects and dark in dark projects', async ({ page }, testInfo) => {
+  await page.goto('/#/Timeline/Default');
+  const [r = 0, g = 0, b = 0] = await page.locator('main[data-story-page]').evaluate((main) => {
+    const page = main.parentElement ?? main;
+    return getComputedStyle(page).backgroundColor.match(/\d+(\.\d+)?/g)?.slice(0, 3).map(Number) ?? [];
+  });
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  if (testInfo.project.name.startsWith('dark')) expect(luminance).toBeLessThan(0.2);
+  else expect(luminance).toBeGreaterThan(0.8);
+});
