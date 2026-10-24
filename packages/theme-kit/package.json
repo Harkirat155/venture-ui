@@ -1,0 +1,45 @@
+{
+  "name": "@venture-ui/theme-kit",
+  "version": "0.0.0",
+  "description": "createProductTheme() over Astryx defineTheme, plus a DTCG to Astryx theme mapping.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./createProductTheme": {
+      "types": "./dist/createProductTheme.d.ts",
+      "default": "./dist/createProductTheme.js"
+    },
+    "./dtcgToAstryx": {
+      "types": "./dist/dtcgToAstryx.d.ts",
+      "default": "./dist/dtcgToAstryx.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@astryxdesign/core": "0.7.4",
+    "@astryxdesign/theme-neutral": "0.7.4"
+  },
+  "devDependencies": {
+    "@astryxdesign/core": "0.7.4",
+    "@astryxdesign/theme-neutral": "0.7.4",
+    "@stylexjs/stylex": "0.19.1",
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@venture-ui/tokens": "workspace:*"
+  }
+}

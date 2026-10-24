@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - examples/*
+
+# These two only print an "astryx init" nudge when they install; nothing else here needs a build script.
+ignoredBuiltDependencies:
+  - '@astryxdesign/cli'
+  - '@astryxdesign/core'

@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm's version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      # Build before the checks below: they read the packages' dist output.
+      - run: pnpm build
+      # tsc in every package, plus `astryx integration check --strict` for @venture-ui/ui.
+      - run: pnpm typecheck
+      # The committed built theme must match its source (fails when stale).
+      - run: pnpm theme:check
+      # Tree-shaking budget for the built example app.
+      - run: pnpm size

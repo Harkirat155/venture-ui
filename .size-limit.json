@@ -1,0 +1,9 @@
+[
+  {
+    "name": "examples/minimal-product JS (gzip)",
+    "path": "examples/minimal-product/dist/assets/*.js",
+    "gzip": true,
+    "running": false,
+    "limit": "132271 B"
+  }
+]

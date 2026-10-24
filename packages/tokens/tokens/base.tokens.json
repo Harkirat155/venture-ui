@@ -1,0 +1,24 @@
+{
+  "$description": "venture-ui base tokens (W3C DTCG). Product-neutral defaults a product theme extends; brand material lives in each product's own repo.",
+  "color": {
+    "$type": "color",
+    "accent": {
+      "$value": "#3355ff",
+      "$description": "Accent seed. Astryx derives the accent, on-accent and neutral palettes from it."
+    }
+  },
+  "spacing": {
+    "$type": "dimension",
+    "1": { "$value": "0.25rem" },
+    "2": { "$value": "0.5rem" },
+    "3": { "$value": "0.75rem" },
+    "4": { "$value": "1rem" },
+    "6": { "$value": "1.5rem" },
+    "8": { "$value": "2rem" }
+  },
+  "radius": {
+    "$type": "dimension",
+    "element": { "$value": "8px" },
+    "container": { "$value": "12px" }
+  }
+}

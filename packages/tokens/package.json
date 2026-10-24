@@ -1,0 +1,32 @@
+{
+  "name": "@venture-ui/tokens",
+  "version": "0.0.0",
+  "description": "Base design tokens (W3C DTCG) for venture-ui products, with a Style Dictionary build to CSS custom properties.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "tokens"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./base.tokens.json": "./tokens/base.tokens.json"
+  },
+  "scripts": {
+    "build": "style-dictionary build --config style-dictionary.config.mjs && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "style-dictionary": "5.7.1",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}
