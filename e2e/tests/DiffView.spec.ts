@@ -12,11 +12,11 @@ async function openStory(page: Page, name: string) {
 const noSidewaysScroll = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
-test('auto is unified on a phone and side by side on a desktop', async ({ page }, testInfo) => {
+test('auto is unified on a phone and side by side on a desktop', async ({ page }) => {
   await openStory(page, 'Auto');
   const headers = page.getByRole('columnheader');
   await expect(headers).toHaveCount(4);
-  const isPhone = testInfo.project.name.endsWith('-390');
+  const isPhone = (page.viewportSize()?.width ?? 0) < 768;
   await expect(headers).toHaveText(isPhone ? ['Old', 'New', 'Change', 'Line'] : ['Old', 'Before', 'New', 'After']);
 });
 
@@ -65,6 +65,15 @@ test('with every run open there are no axe violations and no sideways scroll', a
   expect(await axeViolations(page)).toEqual([]);
   expect(await noSidewaysScroll(page)).toBe(true);
   await expect(page).toHaveScreenshot('DiffView-Unified-expanded.png', { fullPage: true });
+});
+
+test('the side-by-side view, fully opened, has no axe violations and no sideways scroll', async ({ page }) => {
+  await openStory(page, 'Split');
+  const show = page.getByRole('button', { name: /^Show / });
+  while ((await show.count()) > 0) await show.first().click();
+  expect(await axeViolations(page)).toEqual([]);
+  expect(await noSidewaysScroll(page)).toBe(true);
+  await expect(page).toHaveScreenshot('DiffView-Split-expanded.png', { fullPage: true });
 });
 
 test('split pairs the removed and the added line on one row', async ({ page }) => {

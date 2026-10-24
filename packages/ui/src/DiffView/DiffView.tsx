@@ -58,7 +58,10 @@ export type DiffViewLabels = {
   /** Headings of the before side and the after side of the split view. */
   before: string;
   after: string;
-  /** Headings of the old and the new line-number columns (visible in the unified view, hidden in the split view). */
+  /**
+   * Headings of the old and the new line-number columns (visible in the unified view, hidden in the split view). They
+   * sit over a narrow column, so keep them to a word of about three letters.
+   */
   beforeLine: string;
   afterLine: string;
   /** Hidden headings of the marker and text columns of the unified view. */
@@ -149,11 +152,12 @@ export function DiffView({
     ids: new Set(),
   });
   const openIds = open.rows === rows ? open.ids : new Set<number>();
-  const toggle = (id: number) => {
-    const ids = new Set(openIds);
-    if (!ids.delete(id)) ids.add(id);
-    setOpen({ rows, ids });
-  };
+  const toggle = (id: number) =>
+    setOpen((current) => {
+      const ids = new Set(current.rows === rows ? current.ids : []);
+      if (!ids.delete(id)) ids.add(id);
+      return { rows, ids };
+    });
 
   if (added + removed === 0) {
     return (
@@ -335,7 +339,7 @@ function UnifiedLine({ row, language, labels }: { row: DiffRow; language: 'text'
 
 function SplitLine({ row, language, labels }: { row: SplitRow; language: 'text' | 'markdown'; labels: DiffViewLabels }) {
   // A context line is on both sides; the right copy is hidden from assistive technology so it is read once.
-  const isContext = row.left !== undefined && row.left === row.right;
+  const isContext = row.isContext === true;
   return (
     <TableRow>
       <SplitSide row={row.left} number="oldLine" language={language} labels={labels} />

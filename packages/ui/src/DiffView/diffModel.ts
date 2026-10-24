@@ -100,7 +100,7 @@ function mergeShown(segments: Segment[]): Segment[] {
 }
 
 /** One row of the split view: a context line sits on both sides, a change pairs a removed line with an added one. */
-export type SplitRow = { left?: DiffRow; right?: DiffRow };
+export type SplitRow = { left?: DiffRow; right?: DiffRow; isContext?: true };
 
 /**
  * Pairs the removed and added lines of each change block, first with first. jsdiff puts a block's removed lines
@@ -122,7 +122,7 @@ export function splitRows(rows: readonly DiffRow[]): SplitRow[] {
     } else if (row.kind === 'added') added.push(row);
     else {
       flush();
-      out.push({ left: row, right: row });
+      out.push({ left: row, right: row, isContext: true });
     }
   }
   flush();

@@ -115,7 +115,7 @@ describe('splitRows', () => {
 
   it('puts a context line on both sides', () => {
     const c = row('context', 'x');
-    expect(splitRows([c])).toEqual([{ left: c, right: c }]);
+    expect(splitRows([c])).toEqual([{ left: c, right: c, isContext: true }]);
   });
 
   it('pairs removed and added lines of a block first to first, the longer side overhanging', () => {
@@ -135,7 +135,7 @@ describe('splitRows', () => {
     const [r, c, a] = [row('removed', 'r'), row('context', 'c'), row('added', 'a')];
     expect(splitRows([r, c, a])).toEqual([
       { left: r, right: undefined },
-      { left: c, right: c },
+      { left: c, right: c, isContext: true },
       { left: undefined, right: a },
     ]);
   });

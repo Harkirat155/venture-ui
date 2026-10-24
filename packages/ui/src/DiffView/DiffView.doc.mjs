@@ -107,7 +107,7 @@ export default {
       name: 'labels',
       type: 'Partial<DiffViewLabels>',
       description:
-        'Overrides for the built-in English text. DiffViewLabels is { noChanges: string; summary: (added: number, removed: number) => string; summarySpoken: (added: number, removed: number) => string; showUnchanged: (count: number) => string; hideUnchanged: (count: number) => string; added: string; removed: string; unchanged: string; before: string; after: string; beforeLine: string; afterLine: string; change: string; line: string }. Anything you leave out keeps its default.',
+        'Overrides for the built-in English text. DiffViewLabels is { noChanges: string; summary: (added: number, removed: number) => string; summarySpoken: (added: number, removed: number) => string; showUnchanged: (count: number) => string; hideUnchanged: (count: number) => string; added: string; removed: string; unchanged: string; before: string; after: string; beforeLine: string; afterLine: string; change: string; line: string }. Anything you leave out keeps its default. beforeLine and afterLine are the headings over the narrow line-number columns of the unified view: keep them to about three letters ("Old", "New").',
     },
   ],
   examples: [
