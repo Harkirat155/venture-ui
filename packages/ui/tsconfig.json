@@ -1,5 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "noEmit": true },
+  // "node": the Astryx CLI's authoring types (@astryxdesign/cli/authoring) use AbortSignal.
+  "compilerOptions": { "noEmit": true, "types": ["node"] },
   "include": ["src", "astryx.integration.ts"]
 }
