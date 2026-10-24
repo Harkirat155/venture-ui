@@ -10,7 +10,8 @@ ROOT="$PWD"
 # test the mismatch path).
 TSRS_VERSION=0.18.0-ts7.1.0-dev.20260929
 if [ -z "${TSRS:-}" ]; then
-  cache="${TSRS_CACHE:-${TMPDIR:-/tmp}/tsrs-$TSRS_VERSION}"
+  # Per-user cache, never a predictable path in world-writable /tmp (a planted binary would run here).
+  cache="${TSRS_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/tsrs-$TSRS_VERSION}"
   [ -x "$cache/node_modules/.bin/tsrs" ] || npm install --silent --no-save --no-package-lock --prefix "$cache" "tsrs@$TSRS_VERSION" >&2
   TSRS="$cache/node_modules/.bin/tsrs"
 fi
