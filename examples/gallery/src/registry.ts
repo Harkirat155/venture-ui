@@ -8,5 +8,7 @@ export const storyModules: readonly StoryModule[] = Object.values(modules)
   .sort((a, b) => a.component.localeCompare(b.component));
 
 export function findStory(component: string, story: string) {
-  return storyModules.find((m) => m.component === component)?.stories[story];
+  const module = storyModules.find((m) => m.component === component);
+  const render = module?.stories[story];
+  return render ? { render, maxWidth: module?.maxWidth } : undefined;
 }

@@ -21,6 +21,9 @@ FormatJS ICU parsers (@formatjs/*, pulled in by Astryx)   MIT
   https://github.com/formatjs/formatjs
 intl-messageformat (pulled in by Astryx)                  BSD-3-Clause
   Copyright (c) Eric Ferraiuolo / Yahoo! Inc.  https://github.com/formatjs/formatjs
+jsdiff (diff, bundled only into a build that imports    BSD-3-Clause
+  @venture-ui/ui/DiffView)
+  Copyright (c) 2009-2015, Kevin Decker <kpdecker@gmail.com>  https://github.com/kpdecker/jsdiff
 
 Build and test tooling (not shipped)
 ------------------------------------
