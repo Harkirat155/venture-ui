@@ -1,0 +1,32 @@
+venture-ui third-party notices
+==============================
+
+venture-ui is MIT licensed (see LICENSE). It copies no third-party source. It
+depends on the libraries below; the ones marked "bundled" end up in a product's
+JavaScript bundle when that product uses venture-ui, so their licence terms
+travel with the product. Each library's full licence text ships in its npm
+package.
+
+Runtime (bundled into a product's build)
+-----------------------------------------
+Astryx (@astryxdesign/core, @astryxdesign/theme-neutral)  MIT
+  Copyright (c) Meta Platforms, Inc. and affiliates.  https://github.com/facebook/astryx
+StyleX runtime (@stylexjs/stylex)                         MIT
+  Copyright (c) Meta Platforms, Inc. and affiliates.  https://github.com/facebook/stylex
+React, React DOM, Scheduler (react, react-dom)            MIT
+  Copyright (c) Meta Platforms, Inc. and affiliates.  https://github.com/facebook/react
+Lucide icons (lucide-react, pulled in by theme-neutral)   ISC
+  https://github.com/lucide-icons/lucide
+FormatJS ICU parsers (@formatjs/*, pulled in by Astryx)   MIT
+  https://github.com/formatjs/formatjs
+intl-messageformat (pulled in by Astryx)                  BSD-3-Clause
+  Copyright (c) Eric Ferraiuolo / Yahoo! Inc.  https://github.com/formatjs/formatjs
+
+Build and test tooling (not shipped)
+------------------------------------
+Astryx CLI (@astryxdesign/cli)    MIT
+Style Dictionary                  Apache-2.0  https://github.com/amzn/style-dictionary
+Vite, @vitejs/plugin-react        MIT
+Vitest                            MIT
+TypeScript                        Apache-2.0
+size-limit                        MIT
