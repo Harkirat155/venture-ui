@@ -338,7 +338,8 @@ function UnifiedLine({ row, language, labels }: { row: DiffRow; language: 'text'
 }
 
 function SplitLine({ row, language, labels }: { row: SplitRow; language: 'text' | 'markdown'; labels: DiffViewLabels }) {
-  // A context line is on both sides; the right copy is hidden from assistive technology so it is read once.
+  // A context line is on both sides; the text of its right copy is hidden from assistive technology so it is read
+  // once. Its cells are not: the line has a different number on that side.
   const isContext = row.isContext === true;
   return (
     <TableRow>
@@ -365,12 +366,14 @@ function SplitSide({
   const style = { background: row ? WASH[row.kind] : undefined };
   return (
     <>
-      <TableCell style={{ ...numberCell, ...style }} aria-hidden={isDuplicate || undefined}>
+      <TableCell style={{ ...numberCell, ...style }}>
         <LineNumber value={row?.[number]} />
       </TableCell>
-      <TableCell style={{ width: '50%', ...style }} aria-hidden={isDuplicate || undefined}>
+      <TableCell style={{ width: '50%', ...style }}>
         {row ? (
-          <HStack gap={1} align="start">
+          // Every cell stays in the table, so each row has the same four and the new line number is reachable. Only
+          // the repeated text of a context line is hidden, so it is read once, on the left.
+          <HStack gap={1} align="start" aria-hidden={isDuplicate || undefined}>
             <Mark kind={row.kind} labels={labels} />
             <LineText row={row} language={language} />
           </HStack>

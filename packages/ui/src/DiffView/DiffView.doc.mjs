@@ -38,7 +38,7 @@ export default {
         criterion: '1.3.1 Info and Relationships',
         requirement: 'table with headers',
         description:
-          'The diff is a table: one row per line, with column headings, so a screen reader announces each cell with its heading.',
+          'The diff is a table: one row per line, with column headings, so a screen reader announces each cell with its heading. In the side-by-side view every row has the same four cells; the text of an unchanged line is read once, on the left, while its line number on the right stays reachable because it can differ.',
       },
       {
         name: 'Added and removed',

@@ -23,6 +23,7 @@
       "types": "./dist/Timeline/Timeline.d.ts",
       "default": "./dist/Timeline/Timeline.js"
     },
+    "./templates/diffview-showcase": "./templates/diffview-showcase.tsx",
     "./templates/timeline-showcase": "./templates/timeline-showcase.tsx",
     "./package.json": "./package.json"
   },

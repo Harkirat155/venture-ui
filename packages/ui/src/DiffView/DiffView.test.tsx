@@ -1,3 +1,4 @@
+import { isInaccessible } from '@testing-library/dom';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -167,11 +168,13 @@ describe('DiffView modes', () => {
     ]);
   });
 
-  it('split: reads a context line once (its right copy is hidden from assistive technology)', () => {
+  it('split: a context line keeps all four cells, and only the text of its right copy is hidden from assistive technology', () => {
     const { container } = render(<DiffView before={before} after={after} mode="split" />);
     const first = container.querySelector('tbody tr') as HTMLElement;
     const cells = [...first.querySelectorAll('td')];
-    expect(cells.map((c) => c.getAttribute('aria-hidden'))).toEqual([null, null, 'true', 'true']);
+    expect(cells.map((c) => c.getAttribute('aria-hidden'))).toEqual([null, null, null, null]);
+    expect(isInaccessible(within(cells[3] as HTMLElement).getByText('keep'))).toBe(true);
+    expect(isInaccessible(within(cells[1] as HTMLElement).getByText('keep'))).toBe(false);
   });
 
   it('auto: unified below 48rem, split from 48rem up, following the viewport', () => {
@@ -201,6 +204,52 @@ describe('DiffView modes', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
     render(<DiffView before={before} after={after} mode="unified" />);
     expect(screen.getAllByRole('columnheader')[0]?.textContent).toBe('Old');
+  });
+});
+
+describe('DiffView split view for assistive technology', () => {
+  /** The body rows that carry a line (not the rows holding a "Show unchanged lines" button). */
+  const lineRows = (container: HTMLElement) =>
+    [...container.querySelectorAll('tbody tr')].filter((tr) => !tr.querySelector('button')) as HTMLElement[];
+
+  it('exposes the same four cells in every row, context rows included', () => {
+    const { container } = render(<DiffView before={'keep\nold\nkeep too\n'} after={'keep\nnew\nextra\nkeep too\n'} mode="split" />);
+    const rows = lineRows(container);
+    expect(rows).toHaveLength(4);
+    for (const row of rows) expect(within(row).getAllByRole('cell')).toHaveLength(4);
+    // None of the cells is hidden, so none can be dropped from the table a screen reader walks.
+    expect(container.querySelectorAll('td[aria-hidden]')).toHaveLength(0);
+  });
+
+  it('keeps the new line number of a shifted context line reachable', () => {
+    // "a" is line 1 before and line 2 after: the number that differs must not be hidden with the duplicate text.
+    const { container } = render(<DiffView before={'a\nb'} after={'x\na\nb'} mode="split" />);
+    const contextRow = lineRows(container).find((row) => within(row).queryAllByText('a').length > 0);
+    const cells = within(contextRow as HTMLElement).getAllByRole('cell');
+    expect(cells.map((cell) => cell.textContent)).toEqual(['1', 'unchangeda', '2', 'unchangeda']);
+    expect(isInaccessible(cells[2] as HTMLElement)).toBe(false);
+    // The right-hand cell stays in the table, its duplicated text does not.
+    expect(isInaccessible(cells[3] as HTMLElement)).toBe(false);
+    expect(isInaccessible(within(cells[3] as HTMLElement).getByText('a'))).toBe(true);
+    expect(isInaccessible(within(cells[1] as HTMLElement).getByText('a'))).toBe(false);
+  });
+
+  it('reads the text of a context line once, not on both sides', () => {
+    render(<DiffView before={'a\nb'} after={'x\na\nb'} mode="split" />);
+    expect(screen.getAllByText('a').filter((el) => !isInaccessible(el))).toHaveLength(1);
+    expect(screen.getAllByText('unchanged').filter((el) => !isInaccessible(el))).toHaveLength(2); // a and b, once each
+  });
+
+  it('reads a changed line on its own side only', () => {
+    const { container } = render(<DiffView before={'old'} after={'new'} mode="split" />);
+    const [row] = lineRows(container);
+    const cells = within(row as HTMLElement).getAllByRole('cell');
+    expect(cells.map((cell) => cell.textContent)).toEqual(['1', '\u2212removedold', '1', '+addednew']);
+  });
+
+  it('exposes the same cells in the unified view too', () => {
+    const { container } = render(<DiffView before={'a\nb'} after={'x\na\nb'} mode="unified" />);
+    for (const row of lineRows(container)) expect(within(row).getAllByRole('cell')).toHaveLength(4);
   });
 });
 

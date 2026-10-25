@@ -83,6 +83,16 @@ test('split pairs the removed and the added line on one row', async ({ page }) =
   await expect(page.getByRole('columnheader')).toHaveText(['Old', 'Before', 'New', 'After']);
 });
 
+test('in the side-by-side view every line row exposes the same four cells, and the text of an unchanged line is read once', async ({ page }) => {
+  await openStory(page, 'Split');
+  const lines = page.locator('tbody tr').filter({ hasNot: page.getByRole('button') });
+  expect(await lines.count()).toBeGreaterThan(6);
+  for (const row of await lines.all()) await expect(row.getByRole('cell')).toHaveCount(4);
+  // "name: web" is the first line and unchanged: both sides show it, the accessibility tree has it once.
+  await expect(page.getByRole('cell', { name: /^unchanged\s*name: web$/ })).toHaveCount(1);
+  await expect(page.getByRole('cell').filter({ hasText: 'name: web' })).toHaveCount(2);
+});
+
 test('identical texts show "No changes" and no table', async ({ page }) => {
   await openStory(page, 'Identical');
   await expect(page.getByRole('status')).toHaveText('No changes');
