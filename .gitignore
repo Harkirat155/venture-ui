@@ -6,3 +6,7 @@ test-results/
 storybook-static/
 .DS_Store
 *.log
+
+# Local macOS runs write these when iterating; only the -linux baselines are committed.
+e2e/snapshots/*-darwin.png
+e2e/snapshots/*-win32.png

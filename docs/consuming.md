@@ -16,7 +16,7 @@ size-budgets on every push. Steps 1-4 work today; 5-7 are the outline of the con
 ## 1. Add the library
 
 Packages: `@venture-ui/tokens` (base DTCG tokens), `@venture-ui/theme-kit` (DTCG to Astryx theme) and `@venture-ui/ui`
-(the Astryx integration; no components yet). They are ESM only, need Node 24, and pin Astryx exactly
+(the Astryx integration: shared components Astryx lacks). They are ESM only, need Node 24, and pin Astryx exactly
 (`@astryxdesign/core` and `@astryxdesign/theme-neutral` `0.7.4`).
 
 ```bash
@@ -155,8 +155,8 @@ pnpm exec astryx doctor   # "1 integration loaded from installed dependencies ..
 pnpm exec astryx init     # writes Astryx's managed block into your AGENTS.md / CLAUDE.md
 ```
 
-It contributes no components yet. As they land they show up in `pnpm exec astryx component --list` and
-`pnpm exec astryx search "<thing>"` in the product, next to Astryx's own. Missing something? `pnpm exec astryx
+Its components show up in `pnpm exec astryx component --list` and `pnpm exec astryx search "<thing>"` in the
+product, next to Astryx's own, and `pnpm exec astryx component <Name>` prints a component's props and examples. Missing something? `pnpm exec astryx
 gap-report` files it at https://github.com/Harkirat155/venture-ui/issues, the `issuesUrl` in the manifest.
 
 To name the integration explicitly instead, add it to `astryx.config.mjs`:

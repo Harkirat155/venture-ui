@@ -1,6 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
   // "node": the Astryx CLI's authoring types (@astryxdesign/cli/authoring) use AbortSignal.
-  "compilerOptions": { "noEmit": true, "types": ["node"] },
-  "include": ["src", "astryx.integration.ts"]
+  // Bundler resolution: Astryx's .d.ts files use extensionless relative imports, which NodeNext cannot
+  // resolve, so every Astryx component would silently type as `any`. Relative imports in src/ still end in
+  // .js, so the emitted ESM runs in Node and in bundlers.
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "templates", "astryx.integration.ts"]
 }
