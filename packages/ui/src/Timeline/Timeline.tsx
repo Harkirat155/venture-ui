@@ -11,7 +11,7 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { VisuallyHidden } from '@astryxdesign/core/VisuallyHidden';
 import { VStack } from '@astryxdesign/core/VStack';
 import { useId, useMemo, type ReactNode } from 'react';
-import { groupByLocalDay } from './groupItems.js';
+import { groupByDay, knownTimeZone, noonUtc, parseTime, type ParsedTime } from './groupItems.js';
 import { textOf } from './textOf.js';
 
 export type { StatusDotVariant };
@@ -19,13 +19,17 @@ export type { StatusDotVariant };
 export type TimelineItem = {
   /** Stable key for the item. */
   id: string;
-  /** When it happened, ISO 8601. */
+  /**
+   * When it happened, ISO 8601. A bare date (`2026-03-02`) is a calendar day with no time of day and no zone, so it
+   * stays on that day wherever it is viewed. Anything else is a moment and needs an offset or `Z`
+   * (`2026-03-02T09:30:00Z`); it falls on the day it has in the feed's time zone.
+   */
   time: string;
   /** Who or what did it. */
   actor?: ReactNode;
   /** Outcome of the event. It is always shown with a visible label, never as colour alone. */
   status?: StatusDotVariant;
-  /** One line saying what happened. It must contain text: the disclosure button is named from it. */
+  /** One line saying what happened. The disclosure button is named from its text; with none, from the time. */
   title: ReactNode;
   /** Detail shown behind a disclosure button, collapsed by default. */
   body?: ReactNode;
@@ -48,8 +52,13 @@ export type TimelineLabels = {
 export type TimelineProps = {
   /** Events in display order. Timeline renders them as given and never sorts. */
   items: readonly TimelineItem[];
-  /** `day` adds a heading per run of items that share a local calendar day. */
+  /** `day` adds a heading per run of items that share a calendar day in `timeZone`. */
   groupBy?: 'day';
+  /**
+   * IANA zone (`Europe/Berlin`) in which moments are grouped and shown. Defaults to the viewer's zone. A zone the
+   * platform does not know falls back to the default. Date-only times ignore it.
+   */
+  timeZone?: string;
   /** Level of the day headings and of the empty-state title, so they fit the page outline. Defaults to 3. */
   headingLevel?: 2 | 3 | 4 | 5 | 6;
   /** Overrides for the built-in English text. */
@@ -80,21 +89,20 @@ function resolveLabels(labels: Partial<TimelineLabels> | undefined): TimelineLab
  * A vertical event feed: an ordered list of events, each with a status marker, a title, who and when,
  * and an optional body behind a disclosure button. It fetches nothing; the caller passes the items.
  */
-export function Timeline({ items, groupBy, headingLevel = 3, labels }: TimelineProps) {
+export function Timeline({ items, groupBy, timeZone, headingLevel = 3, labels }: TimelineProps) {
   const locale = useLocale();
   const idPrefix = useId();
   const text = useMemo(() => resolveLabels(labels), [labels]);
-  const groups = useMemo(() => (groupBy === 'day' ? groupByLocalDay(items) : []), [items, groupBy]);
-  const dayFormat = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: 'full' }), [locale]);
+  const zone = useMemo(() => knownTimeZone(timeZone), [timeZone]);
+  const formats = useMemo(() => timeFormats(locale, zone), [locale, zone]);
+  const groups = useMemo(() => (groupBy === 'day' ? groupByDay(items, zone) : []), [items, groupBy, zone]);
 
   if (items.length === 0) {
     return <EmptyState title={text.empty} headingLevel={headingLevel} isCompact />;
   }
 
-  const timeFormat = groupBy === 'day' ? 'time' : 'date_time';
-
   if (groupBy !== 'day') {
-    return <TimelineList items={items} timeFormat={timeFormat} labels={text} />;
+    return <TimelineList items={items} isGrouped={false} formats={formats} labels={text} />;
   }
 
   return (
@@ -104,9 +112,9 @@ export function Timeline({ items, groupBy, headingLevel = 3, labels }: TimelineP
         return (
           <VStack as="li" key={`${group.key}:${group.items[0]?.id}`} gap={2}>
             <Heading level={headingLevel} id={headingId}>
-              {group.date ? dayFormat.format(group.date) : text.unknownDay}
+              {group.date ? formats.day.format(group.date) : text.unknownDay}
             </Heading>
-            <TimelineList items={group.items} timeFormat={timeFormat} labels={text} labelledBy={headingId} />
+            <TimelineList items={group.items} isGrouped formats={formats} labels={text} labelledBy={headingId} />
           </VStack>
         );
       })}
@@ -114,14 +122,50 @@ export function Timeline({ items, groupBy, headingLevel = 3, labels }: TimelineP
   );
 }
 
+type TimeFormats = {
+  /** The zone moments are shown in; undefined is the viewer's own, which Astryx's Timestamp renders. */
+  zone: string | undefined;
+  /** A calendar day in full, of a noon-UTC date (the day heading). */
+  day: Intl.DateTimeFormat;
+  /** A calendar day, of a noon-UTC date (a date-only time). */
+  date: Intl.DateTimeFormat;
+  /** Time of day of a moment, in `zone`. */
+  clock: Intl.DateTimeFormat;
+  /** Date and time of a moment, in `zone`. */
+  dateTime: Intl.DateTimeFormat;
+};
+
+function timeFormats(locale: string, zone: string | undefined): TimeFormats {
+  // A chosen zone is named in the text, since it may not be the one the reader is in.
+  const timeZoneName = zone ? ('short' as const) : undefined;
+  const dayFields = { year: 'numeric', month: 'short', day: 'numeric' } as const;
+  const clockFields = { hour: 'numeric', minute: '2-digit', timeZone: zone, timeZoneName } as const;
+  return {
+    zone,
+    day: new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeZone: 'UTC' }),
+    date: new Intl.DateTimeFormat(locale, { ...dayFields, timeZone: 'UTC' }),
+    clock: new Intl.DateTimeFormat(locale, clockFields),
+    dateTime: new Intl.DateTimeFormat(locale, { ...dayFields, ...clockFields }),
+  };
+}
+
+/** The time as one phrase, for a screen-reader name: a date, a date and time, or the text as given when it does not parse. */
+function timePhrase(parsed: ParsedTime | undefined, raw: string, formats: TimeFormats): string {
+  if (!parsed) return raw;
+  return parsed.kind === 'date' ? formats.date.format(noonUtc(parsed)) : formats.dateTime.format(parsed.date);
+}
+
 function TimelineList({
   items,
-  timeFormat,
+  isGrouped,
+  formats,
   labels,
   labelledBy,
 }: {
   items: readonly TimelineItem[];
-  timeFormat: 'time' | 'date_time';
+  /** Under a day heading, which already says the date. */
+  isGrouped: boolean;
+  formats: TimeFormats;
   labels: TimelineLabels;
   labelledBy?: string;
 }) {
@@ -133,7 +177,8 @@ function TimelineList({
           item={item}
           isFirst={index === 0}
           isLast={index === items.length - 1}
-          timeFormat={timeFormat}
+          isGrouped={isGrouped}
+          formats={formats}
           labels={labels}
         />
       ))}
@@ -145,17 +190,21 @@ function TimelineEntry({
   item,
   isFirst,
   isLast,
-  timeFormat,
+  isGrouped,
+  formats,
   labels,
 }: {
   item: TimelineItem;
   isFirst: boolean;
   isLast: boolean;
-  timeFormat: 'time' | 'date_time';
+  isGrouped: boolean;
+  formats: TimeFormats;
   labels: TimelineLabels;
 }) {
   const label = item.status ? (labels.status[item.status] ?? item.status) : undefined;
-  const titleText = textOf(item.title);
+  const parsed = parseTime(item.time);
+  // A title with no text (an icon) cannot name its button, so the time does: one item's time rarely repeats.
+  const subject = textOf(item.title) || timePhrase(parsed, item.time, formats);
   return (
     <HStack as="li" gap={3}>
       {/* Decorative rail: the visible status label below carries the meaning. */}
@@ -177,12 +226,7 @@ function TimelineEntry({
           </Text>
           <HStack gap={2} align="center" wrap="wrap">
             {item.actor ? <Text type="supporting">{item.actor}</Text> : null}
-            {/* Timestamp renders nothing for a time it cannot parse; show the raw text rather than lose it. */}
-            {Number.isNaN(Date.parse(item.time)) ? (
-              <Text type="supporting">{item.time}</Text>
-            ) : (
-              <Timestamp value={item.time} format={timeFormat} hasTooltip={false} />
-            )}
+            <TimeText time={item.time} parsed={parsed} isGrouped={isGrouped} formats={formats} />
             {label ? <Text type="supporting">{label}</Text> : null}
           </HStack>
           {item.body ? (
@@ -195,7 +239,7 @@ function TimelineEntry({
                   <Text type="supporting" aria-hidden="true">
                     {labels.details}
                   </Text>
-                  <VisuallyHidden>{titleText ? labels.detailsFor(titleText) : labels.details}</VisuallyHidden>
+                  <VisuallyHidden>{labels.detailsFor(subject)}</VisuallyHidden>
                 </>
               }
             >
@@ -209,5 +253,41 @@ function TimelineEntry({
         </VStack>
       </StackItem>
     </HStack>
+  );
+}
+
+/**
+ * One item's time. Astryx's Timestamp renders a moment in the viewer's zone; for a chosen zone, or a calendar day
+ * (which has no zone to render in), the time is written here, in a <time> with the same machine-readable value.
+ */
+function TimeText({
+  time,
+  parsed,
+  isGrouped,
+  formats,
+}: {
+  time: string;
+  parsed: ParsedTime | undefined;
+  isGrouped: boolean;
+  formats: TimeFormats;
+}) {
+  // Timestamp renders nothing for a time it cannot parse; show the text as given rather than lose it.
+  if (!parsed) return <Text type="supporting">{time}</Text>;
+  if (parsed.kind === 'date') {
+    // A day has no time of day to add under a heading that already names the day.
+    if (isGrouped) return null;
+    return (
+      <Text type="supporting">
+        <time dateTime={parsed.iso}>{formats.date.format(noonUtc(parsed))}</time>
+      </Text>
+    );
+  }
+  if (formats.zone === undefined) {
+    return <Timestamp value={time} format={isGrouped ? 'time' : 'date_time'} hasTooltip={false} />;
+  }
+  return (
+    <Text type="supporting">
+      <time dateTime={parsed.iso}>{(isGrouped ? formats.clock : formats.dateTime).format(parsed.date)}</time>
+    </Text>
   );
 }

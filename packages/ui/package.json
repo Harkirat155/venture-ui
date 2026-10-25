@@ -8,6 +8,7 @@
     "dist",
     "astryx.integration.ts",
     "src",
+    "templates",
     "!src/**/*.test.*"
   ],
   "sideEffects": [
@@ -18,11 +19,12 @@
       "types": "./dist/Timeline/Timeline.d.ts",
       "default": "./dist/Timeline/Timeline.js"
     },
+    "./templates/timeline-showcase": "./templates/timeline-showcase.tsx",
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json && astryx integration check --strict"
+    "typecheck": "tsc -p tsconfig.json && astryx integration check --strict --next"
   },
   "peerDependencies": {
     "@astryxdesign/core": "0.7.4",

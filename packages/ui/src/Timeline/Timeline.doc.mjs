@@ -23,7 +23,12 @@ export default {
       {
         guidance: true,
         description:
-          'Give a string or plain-text title when the item has a body: the disclosure button is named "Details for <title>" for screen readers, so the title is what tells many identical buttons apart.',
+          'Give a string or plain-text title when the item has a body: the disclosure button is named "Details for <title>" for screen readers, so the title is what tells many identical buttons apart. A title with no text (an icon) falls back to the item\'s time, "Details for Mar 2, 2026, 9:30 AM"; two such items with the same time would share a name.',
+      },
+      {
+        guidance: true,
+        description:
+          'Send a moment as ISO 8601 with an offset or Z, and a day with no time of day as a bare YYYY-MM-DD. A bare date stays on its day in every zone; a moment is placed by timeZone (the viewer\'s zone when you set none), so a record made at 23:30 UTC lands on the next day for a viewer east of Greenwich.',
       },
       {
         guidance: true,
@@ -50,7 +55,8 @@ export default {
         category: 'Semantics',
         criterion: '1.3.1 Info and Relationships',
         requirement: 'time with datetime',
-        description: 'Every time is a time element with an ISO 8601 datetime attribute.',
+        description:
+          'Every time is a time element with an ISO 8601 datetime attribute (YYYY-MM-DD for a bare date). Under a day heading, a bare date adds no time element of its own: the heading says the day.',
       },
       {
         name: 'Status label',
@@ -71,7 +77,7 @@ export default {
       },
     ],
     anatomy: [
-      { name: 'Day heading', required: false, description: 'One heading per run of items on the same local day, shown with groupBy="day".' },
+      { name: 'Day heading', required: false, description: 'One heading per run of items on the same calendar day, shown with groupBy="day".' },
       { name: 'Marker rail', required: true, description: 'A status dot per item joined by a thin line to the next item.' },
       { name: 'Title', required: true, description: 'One line saying what happened.' },
       { name: 'Meta row', required: true, description: 'Actor, time, and the status label.' },
@@ -84,14 +90,20 @@ export default {
       name: 'items',
       type: 'readonly TimelineItem[]',
       description:
-        'The events, in display order. A TimelineItem is { id: string; time: string; actor?: ReactNode; status?: StatusDotVariant; title: ReactNode; body?: ReactNode }. time is ISO 8601; status is one of success, warning, error, accent, neutral. An empty array shows the empty state.',
+        'The events, in display order. A TimelineItem is { id: string; time: string; actor?: ReactNode; status?: StatusDotVariant; title: ReactNode; body?: ReactNode }. time is ISO 8601: a bare date (2026-03-02) is a calendar day with no time of day and no zone, shown as that date wherever it is viewed; anything else is a moment and needs an offset or Z. A date that does not exist (2026-02-30) does not parse. status is one of success, warning, error, accent, neutral. An empty array shows the empty state.',
       required: true,
     },
     {
       name: 'groupBy',
       type: "'day'",
       description:
-        'Adds a heading per run of consecutive items that share a local calendar day, formatted with Intl in the Astryx locale. Items whose time does not parse go under an "Unknown date" heading. Omit it for a flat list, which shows the date with each time.',
+        'Adds a heading per run of consecutive items that share a calendar day in timeZone, formatted with Intl in the Astryx locale. Items whose time does not parse go under an "Unknown date" heading. Omit it for a flat list, which shows the date with each time.',
+    },
+    {
+      name: 'timeZone',
+      type: 'string',
+      description:
+        'IANA zone name (Europe/Berlin) in which moments are grouped by day and shown; the times then carry the zone\'s short name ("10:30 PM EST"). Defaults to the viewer\'s zone, where the times are Astryx Timestamps. A name the platform does not know falls back to the default instead of throwing. Bare dates ignore it.',
     },
     {
       name: 'headingLevel',
@@ -117,6 +129,19 @@ export default {
     {id: 'e3', time: '2026-03-02T09:30:00Z', actor: 'Priya', status: 'success', title: 'Deploy finished', body: 'Build 4821 on main'},
     {id: 'e2', time: '2026-03-02T08:00:00Z', actor: 'Priya', title: 'Deploy started'},
     {id: 'e1', time: '2026-03-01T17:10:00Z', actor: 'CI', status: 'error', title: 'Rollback failed', body: 'Timed out after 300 s'},
+  ]}
+/>`,
+    },
+    {
+      label: 'Audit log in the team\'s zone, with a bare date',
+      code: `import {Timeline} from '@venture-ui/ui/Timeline';
+
+<Timeline
+  groupBy="day"
+  timeZone="Europe/Berlin"
+  items={[
+    {id: 'e2', time: '2026-03-02T23:30:00Z', actor: 'CI', status: 'success', title: 'Nightly build', body: 'Build 4822'},
+    {id: 'e1', time: '2026-03-02', title: 'Release freeze starts'},
   ]}
 />`,
     },

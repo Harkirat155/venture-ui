@@ -17,6 +17,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Changesets compares against the PR's base branch, so it needs the history.
+          fetch-depth: 0
       # pnpm's version comes from "packageManager" in package.json.
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -24,6 +27,13 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # A PR that changes a publishable package needs a changeset (`pnpm changeset`; `--empty` when no release is
+      # due). The examples and e2e are private and ignored in .changeset/config.json, so a PR that touches only them,
+      # or only docs and CI, passes.
+      - if: github.event_name == 'pull_request'
+        run: pnpm changeset status --since="origin/$BASE_REF"
+        env:
+          BASE_REF: ${{ github.base_ref }}
       - run: pnpm test
       # Build before the checks below: they read the packages' dist output.
       - run: pnpm build

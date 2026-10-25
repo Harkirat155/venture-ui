@@ -15,7 +15,8 @@ package version.
   for `examples/gallery/src/gallery.*`.
 - **Every component** ships with docs (`.doc.mjs`), a story, a Playwright screenshot and an axe check.
 - **Third-party code:** keep licence notices in `THIRD_PARTY_NOTICES`; copy nothing from non-MIT/Pro libraries.
-- Changes land through Changesets; products bump their pin after a release.
+- Changes land through Changesets (`pnpm changeset`); products bump their pin after a release. CI fails a PR that changes a
+  publishable package without one (`pnpm changeset status`; `pnpm changeset --empty` when no release is due).
 
 ## Adding a component
 Every component PR follows this shape, so the next one costs one folder, one story and a few lines of config.
@@ -26,7 +27,8 @@ Every component PR follows this shape, so the next one costs one folder, one sto
    modules with `Bundler`: under `NodeNext` Astryx's types silently become `any`.
 2. **One subpath export** in `packages/ui/package.json`: `"./<Name>": { "types": "./dist/<Name>/<Name>.d.ts", "default": "./dist/<Name>/<Name>.js" }`.
    No barrel. The manifest's `components: './src'` finds the doc. `astryx component <Name>` must work from
-   `examples/minimal-product`, and `pnpm --filter @venture-ui/ui typecheck` (`astryx integration check --strict`) must pass.
+   `examples/minimal-product`, and `pnpm --filter @venture-ui/ui typecheck` (`astryx integration check --strict --next`)
+   must pass. `--next` holds the package to the rules of the next Astryx minor, so an upgrade does not break CI.
 3. **A story** in `examples/gallery/src/stories/<Name>.stories.tsx`: `export default defineStories({ component, stories: { Name: () => <.../> } })`.
    It imports from `@venture-ui/ui/<Name>` like a product, never from `src`. Use fixed times and data, and set
    `headingLevel` so the story sits under the page's h1. Nothing else needs editing: the gallery, the screenshot
@@ -40,8 +42,15 @@ Every component PR follows this shape, so the next one costs one folder, one sto
    `e2e/snapshots/*-linux.png`. CI is linux/amd64; the baselines were made on arm64 and pass there at Playwright's default
    threshold, and `E2E_PLATFORM=linux/amd64` makes the local run match CI's CPU exactly (emulated, slow). Without Docker,
    push, and when the CI `e2e` job fails download its `e2e-baselines` artifact. Either way, review the images and commit them.
-6. **Size.** Add an entry to `.size-limit.json` (the component's `dist` file, `"import": "{ <Name> }"`, react external,
+6. **Showcase template**: `packages/ui/templates/<name>-showcase.tsx` (a small composition that imports
+   `@venture-ui/ui/<Name>` like a product and default-exports a component) with `<name>-showcase.doc.mjs`
+   (`exampleFor: '<Name>'`, `isShowcase: true`), and `"./templates/<name>-showcase": "./templates/<name>-showcase.tsx"` in
+   `exports`. Without one, `astryx integration check --strict --next` fails (`component_without_example`).
+7. **Changeset.** `pnpm changeset`, select `@venture-ui/ui`, a minor bump for a new component, and one sentence a consumer
+   would read in the changelog. The file goes in `.changeset/` and is committed with the PR.
+8. **Size.** Add an entry to `.size-limit.json` (the component's `dist` file, `"import": "{ <Name> }"`, react external,
    limit = measured + 5%). `examples/minimal-product` must not grow: it does not import the component.
-7. **Dependencies and notices.** A third-party package goes in `THIRD_PARTY_NOTICES` and in the `package.json` of the
+9. **Dependencies and notices.** A third-party package goes in `THIRD_PARTY_NOTICES` and in the `package.json` of the
    package that uses it (types and tools included, not only the root).
-8. **Before the PR:** `pnpm install && pnpm test && pnpm build && pnpm typecheck && pnpm theme:check && pnpm size && pnpm e2e && bash scripts/tsrs-shadow.sh`.
+10. **Before the PR:** `pnpm install && pnpm test && pnpm build && pnpm typecheck && pnpm theme:check && pnpm size && pnpm e2e && bash scripts/tsrs-shadow.sh`, and
+    `pnpm changeset status --since=main` (it needs your changeset committed).

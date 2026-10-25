@@ -34,3 +34,4 @@ Playwright (@playwright/test)     Apache-2.0  https://github.com/microsoft/playw
 axe-core (@axe-core/playwright)   MPL-2.0     https://github.com/dequelabs/axe-core-npm
   Test time only. Nothing is copied from it, and none of it is bundled or published.
 Testing Library, jsdom            MIT
+Changesets (@changesets/cli)      MIT         https://github.com/changesets/changesets
