@@ -11,6 +11,13 @@ describe('parseTime', () => {
     expect(parseTime('2026-03-02T15:00:00+05:30')).toMatchObject({ kind: 'instant', iso: '2026-03-02T09:30:00.000Z' });
   });
 
+  it('reads a date with stray whitespace as the same calendar day, not as a moment', () => {
+    // new Date(' 2026-03-02 ') is local midnight, which a chosen time zone would then move to another day.
+    expect(parseTime(' 2026-03-02\n')).toEqual({ kind: 'date', year: 2026, month: 3, day: 2, iso: '2026-03-02' });
+    expect(groupByDay([item('a', '2026-03-02 ')], 'Pacific/Auckland').map((g) => g.key)).toEqual(['2026-03-02']);
+    expect(groupByDay([item('a', '2026-03-02 ')], 'Pacific/Honolulu').map((g) => g.key)).toEqual(['2026-03-02']);
+  });
+
   it('rejects dates that do not exist instead of rolling them over', () => {
     for (const bad of ['2026-02-30', '2026-02-29', '2026-13-01', '2026-00-10', '2026-04-31', '2026-01-00']) {
       expect(parseTime(bad)).toBeUndefined();
@@ -66,6 +73,11 @@ describe('groupByDay with an explicit zone (independent of the process zone)', (
     // New York springs forward at 07:00Z on 2026-03-08.
     const around = [item('a', '2026-03-08T06:30:00Z'), item('b', '2026-03-08T07:30:00Z')];
     expect(groupByDay(around, 'America/New_York').map((g) => g.key)).toEqual(['2026-03-08']);
+  });
+
+  it('falls back to the viewer\'s zone for a name it does not know, instead of throwing', () => {
+    expect(() => groupByDay([item('a', '2026-03-02T03:30:00Z')], 'Nowhere/Land')).not.toThrow();
+    expect(groupByDay([item('a', '2026-03-02T03:30:00Z')], 'Nowhere/Land')).toEqual(groupByDay([item('a', '2026-03-02T03:30:00Z')]));
   });
 
   it('keeps the order given and puts unparseable times in one unknown run', () => {

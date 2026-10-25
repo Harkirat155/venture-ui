@@ -22,7 +22,8 @@ export type TimelineItem = {
   /**
    * When it happened, ISO 8601. A bare date (`2026-03-02`) is a calendar day with no time of day and no zone, so it
    * stays on that day wherever it is viewed. Anything else is a moment and needs an offset or `Z`
-   * (`2026-03-02T09:30:00Z`); it falls on the day it has in the feed's time zone.
+   * (`2026-03-02T09:30:00Z`); it falls on the day it has in the feed's time zone. A moment written with neither is
+   * read in the viewer's own zone, as JavaScript does.
    */
   time: string;
   /** Who or what did it. */

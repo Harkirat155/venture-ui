@@ -56,7 +56,7 @@ export default {
         criterion: '1.3.1 Info and Relationships',
         requirement: 'time with datetime',
         description:
-          'Every time is a time element with an ISO 8601 datetime attribute (YYYY-MM-DD for a bare date). Under a day heading, a bare date adds no time element of its own: the heading says the day.',
+          'Every time is a time element with an ISO 8601 datetime attribute (YYYY-MM-DD for a bare date). Two exceptions: under a day heading a bare date adds no time element of its own, since the heading says the day; and a time that does not parse is shown as the text given, with no time element.',
       },
       {
         name: 'Status label',
@@ -90,7 +90,7 @@ export default {
       name: 'items',
       type: 'readonly TimelineItem[]',
       description:
-        'The events, in display order. A TimelineItem is { id: string; time: string; actor?: ReactNode; status?: StatusDotVariant; title: ReactNode; body?: ReactNode }. time is ISO 8601: a bare date (2026-03-02) is a calendar day with no time of day and no zone, shown as that date wherever it is viewed; anything else is a moment and needs an offset or Z. A date that does not exist (2026-02-30) does not parse. status is one of success, warning, error, accent, neutral. An empty array shows the empty state.',
+        'The events, in display order. A TimelineItem is { id: string; time: string; actor?: ReactNode; status?: StatusDotVariant; title: ReactNode; body?: ReactNode }. time is ISO 8601: a bare date (2026-03-02) is a calendar day with no time of day and no zone, shown as that date wherever it is viewed; anything else is a moment and needs an offset or Z (one without either is read in the viewer\'s own zone). A date that does not exist (2026-02-30) does not parse. status is one of success, warning, error, accent, neutral. An empty array shows the empty state.',
       required: true,
     },
     {

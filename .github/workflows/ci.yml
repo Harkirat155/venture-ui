@@ -72,8 +72,10 @@ jobs:
           retention-days: 7
       # Docker-free way to refresh baselines: when this job fails, re-render the screenshots here (the platform they
       # must match) and publish them. Review the images, then copy the files into e2e/snapshots and commit them.
+      # No `|| true`: the job is already failing, so the upload below still runs, and a refresh that itself fails
+      # shows as a red step instead of publishing stale baselines as fresh ones.
       - if: failure()
-        run: pnpm e2e --update-snapshots || true
+        run: pnpm e2e --update-snapshots
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

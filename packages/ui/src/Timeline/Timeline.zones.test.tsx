@@ -196,8 +196,8 @@ describe('Timeline disclosure button for an item whose title has no text', () =>
     expect(screen.getByRole('button', { name: 'Details for sometime' })).toBeTruthy();
   });
 
-  it('follows labels.detailsFor', () => {
-    render(<Timeline items={items.slice(0, 1)} labels={{ detailsFor: (t) => `Mehr zu ${t}` }} />);
+  it('follows labels.detailsFor, which keeps the visible word in the name', () => {
+    render(<Timeline items={items.slice(0, 1)} labels={{ details: 'Mehr', detailsFor: (t) => `Mehr zu ${t}` }} />);
     expect(screen.getByRole('button', { name: /^Mehr zu Mar 2, 2026, 9:30\sAM$/ })).toBeTruthy();
   });
 });

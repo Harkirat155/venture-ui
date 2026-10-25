@@ -12,7 +12,10 @@ export type ParsedTime =
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /** The parsed time, or undefined when it does not parse. An impossible date such as `2026-02-30` does not parse. */
-export function parseTime(time: string): ParsedTime | undefined {
+export function parseTime(raw: string): ParsedTime | undefined {
+  // Whitespace around a date (a CSV cell, a template) must not turn a calendar day into a moment: Date reads
+  // ' 2026-03-02 ' as local midnight, which a chosen time zone would then move to another day.
+  const time = raw.trim();
   const match = DATE_ONLY.exec(time);
   if (match) {
     const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
@@ -80,8 +83,14 @@ function groupOf(day: CalendarDay) {
  * parse share an `unknown` run.
  */
 export function groupByDay(items: readonly TimelineItem[], timeZone?: string): TimelineGroup[] {
-  // One formatter for the whole feed: building one per item is the slow part on a long list.
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' });
+  // One formatter for the whole feed: building one per item is the slow part on a long list. A zone the platform
+  // does not know is the viewer's zone, the same fallback the component applies, so this cannot throw.
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: knownTimeZone(timeZone),
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  });
   const groups: { key: string; date: Date | undefined; items: TimelineItem[] }[] = [];
   for (const item of items) {
     const parsed = parseTime(item.time);
