@@ -16,7 +16,8 @@ test('auto is unified on a phone and side by side on a desktop', async ({ page }
   await openStory(page, 'Auto');
   const headers = page.getByRole('columnheader');
   await expect(headers).toHaveCount(4);
-  const isPhone = (page.viewportSize()?.width ?? 0) < 768;
+  // The component's own breakpoint, asked of the browser, so a different root font size cannot make this disagree.
+  const isPhone = !(await page.evaluate(() => window.matchMedia('(min-width: 48rem)').matches));
   await expect(headers).toHaveText(isPhone ? ['Old', 'New', 'Change', 'Line'] : ['Old', 'Before', 'New', 'After']);
 });
 

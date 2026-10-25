@@ -90,8 +90,8 @@ const DEFAULT_LABELS: DiffViewLabels = {
 };
 
 const WIDE = '(min-width: 48rem)';
-// Read synchronously on the client, so a wide screen never shows a frame of the unified view first. No matchMedia
-// (a server, jsdom) means narrow.
+// Read synchronously when the client renders, so a wide screen does not show a frame of the unified view first. With
+// no matchMedia (a server, jsdom) it is narrow, so a server-rendered page hydrates narrow and then switches.
 const hasMedia = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function';
 const subscribeWide = (onChange: () => void) => {
   if (!hasMedia()) return () => {};
@@ -146,17 +146,18 @@ export function DiffView({
   const rows = useMemo(() => buildRows(before, after, normalizeLineEndings), [before, after, normalizeLineEndings]);
   const segments = useMemo(() => segmentRows(rows, context), [rows, context]);
   const { added, removed } = useMemo(() => summarize(rows), [rows]);
-  // Which collapsed runs are open. Tied to this `rows` value, so new input starts everything collapsed.
-  const [open, setOpen] = useState<{ rows: readonly DiffRow[]; ids: ReadonlySet<number> }>({
-    rows,
+  // Which collapsed runs are open. A run is named by where it starts, so the set means something only for the
+  // `segments` it was made for: new input or a new `context` changes them and starts everything collapsed.
+  const [open, setOpen] = useState<{ segments: readonly Segment[]; ids: ReadonlySet<number> }>({
+    segments,
     ids: new Set(),
   });
-  const openIds = open.rows === rows ? open.ids : new Set<number>();
+  const openIds = open.segments === segments ? open.ids : new Set<number>();
   const toggle = (id: number) =>
     setOpen((current) => {
-      const ids = new Set(current.rows === rows ? current.ids : []);
+      const ids = new Set(current.segments === segments ? current.ids : []);
       if (!ids.delete(id)) ids.add(id);
-      return { rows, ids };
+      return { segments, ids };
     });
 
   if (added + removed === 0) {

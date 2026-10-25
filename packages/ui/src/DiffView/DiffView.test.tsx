@@ -139,6 +139,18 @@ describe('DiffView collapsed unchanged lines', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
+  it('starts collapsed again when the context changes, instead of opening a different slice', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<DiffView before={before} after={after} mode="unified" context={3} />);
+    await user.click(screen.getByRole('button', { name: 'Show 11 unchanged lines' }));
+    // With context 1 the first run starts at the same row but is longer (13 lines): an id kept from the old
+    // layout would open it, a slice nobody asked for.
+    rerender(<DiffView before={before} after={after} mode="unified" context={1} />);
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.map((b) => b.textContent)).toEqual(['Show 13 unchanged lines', 'Show 14 unchanged lines']);
+    expect(buttons.every((b) => b.getAttribute('aria-expanded') === 'false')).toBe(true);
+  });
+
   it('starts collapsed again when the input changes', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<DiffView before={before} after={after} mode="unified" />);
