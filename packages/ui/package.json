@@ -15,10 +15,15 @@
     "**/*.css"
   ],
   "exports": {
+    "./DiffView": {
+      "types": "./dist/DiffView/DiffView.d.ts",
+      "default": "./dist/DiffView/DiffView.js"
+    },
     "./Timeline": {
       "types": "./dist/Timeline/Timeline.d.ts",
       "default": "./dist/Timeline/Timeline.js"
     },
+    "./templates/diffview-showcase": "./templates/diffview-showcase.tsx",
     "./templates/timeline-showcase": "./templates/timeline-showcase.tsx",
     "./package.json": "./package.json"
   },
@@ -45,5 +50,8 @@
     "react-dom": "19.3.1",
     "typescript": "5.9.3",
     "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "diff": "9.0.0"
   }
 }

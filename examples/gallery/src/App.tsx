@@ -26,16 +26,16 @@ function Page({ children }: { children: ReactNode }) {
  */
 export function App() {
   const [, component, story] = useSyncExternalStore(subscribe, currentHash).split('/');
-  const render = component && story ? findStory(component, story) : undefined;
+  const found = component && story ? findStory(component, story) : undefined;
 
-  if (render) {
+  if (found) {
     return (
       <Page>
-        <VStack as="main" gap={4} padding={4} maxWidth="48rem" data-story-page={`${component}/${story}`}>
+        <VStack as="main" gap={4} padding={4} maxWidth={found.maxWidth ?? '48rem'} data-story-page={`${component}/${story}`}>
           <Link href="#/">All stories</Link>
           <Heading level={1}>{`${component}: ${story}`}</Heading>
           {/* Keyed, so no state (an open disclosure, say) carries over from the previous story. */}
-          <Fragment key={`${component}/${story}`}>{render()}</Fragment>
+          <Fragment key={`${component}/${story}`}>{found.render()}</Fragment>
         </VStack>
       </Page>
     );
