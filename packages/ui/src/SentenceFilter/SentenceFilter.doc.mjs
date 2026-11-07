@@ -38,6 +38,11 @@ export default {
       {
         guidance: true,
         description:
+          'A word\'s label stays on one line, so a long label pushes the whole word to the next line. Keep labels short.',
+      },
+      {
+        guidance: true,
+        description:
           'Expect the open popup to cover the words after the one it belongs to. Choosing an option or pressing Escape closes it and shows them again. This is by design: the popup sits under its word and does not push the sentence apart.',
       },
       {

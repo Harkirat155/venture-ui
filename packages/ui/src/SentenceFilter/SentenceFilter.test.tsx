@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -150,6 +150,105 @@ describe('SentenceFilter choosing', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Genre: any genre' }));
     await user.keyboard('{Enter}');
     expect(radio(/poetry/)).toBeTruthy();
+  });
+});
+
+describe('SentenceFilter open cycles and counts', () => {
+  const genreWord = () => screen.getByRole('button', { name: /^Genre: / });
+
+  it('chooses a different option after reopening from a no-change choice', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    await user.click(genreWord());
+    await user.click(radio(/any genre/));
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(genreWord());
+    expect(genreWord().getAttribute('aria-expanded')).toBe('true');
+    await user.click(radio(/poetry/));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('genre', 'poetry');
+    expect(genreWord().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('chooses again after reopening when the parent ignored the first choice', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    await user.click(genreWord());
+    await user.click(radio(/poetry/));
+    expect(genreWord().getAttribute('aria-expanded')).toBe('false');
+    await user.click(genreWord());
+    await user.click(radio(/essays/));
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange).toHaveBeenLastCalledWith('genre', 'essays');
+    expect(genreWord().getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('keeps the same options on screen, now on the new value, when value changes while it is open', async () => {
+    const user = userEvent.setup();
+    const withValue = (value: string, label: string): SentencePart[] =>
+      parts.map((part) => (typeof part !== 'string' && part.type === 'word' && part.id === 'genre' ? { ...part, value, label } : part));
+    const view = render(<SentenceFilter parts={withValue('any', 'any genre')} onChange={() => {}} />);
+    await user.click(genreWord());
+    // jsdom will not focus inside the popup, so prove "no remount" (a remount drops focus to the body): the very same
+    // radio element must survive the change.
+    const before = radio(/any genre/);
+    view.rerender(<SentenceFilter parts={withValue('poetry', 'poetry')} onChange={() => {}} />);
+    expect(radio(/any genre/)).toBe(before);
+    expect(radio(/poetry/).checked).toBe(true);
+  });
+
+  // jsdom does not move radios on arrow keys or focus inside the popup, so replay what a browser sends: the arrow's
+  // keydown, the click it makes on the new radio, then the keyup.
+  const arrowTo = (from: RegExp, to: RegExp) => {
+    fireEvent.keyDown(radio(from), { key: 'ArrowDown' });
+    fireEvent.click(radio(to));
+    fireEvent.keyUp(radio(to), { key: 'ArrowDown' });
+  };
+
+  it('counts one onChange for Space after an arrow, and one for a click on an arrow-moved option', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    await user.click(genreWord());
+    arrowTo(/any genre/, /poetry/);
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(radio(/poetry/), { key: ' ' });
+    fireEvent.keyUp(radio(/poetry/), { key: ' ' });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('genre', 'poetry');
+    await user.click(genreWord());
+    arrowTo(/any genre/, /essays/);
+    await user.click(radio(/essays/));
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange).toHaveBeenLastCalledWith('genre', 'essays');
+  });
+
+  it('counts no onChange for Enter or Space on the unchanged option', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    await user.click(genreWord());
+    fireEvent.keyDown(radio(/any genre/), { key: 'Enter' });
+    expect(genreWord().getAttribute('aria-expanded')).toBe('false');
+    await user.click(genreWord());
+    fireEvent.keyDown(radio(/any genre/), { key: ' ' });
+    fireEvent.keyUp(radio(/any genre/), { key: ' ' });
+    expect(genreWord().getAttribute('aria-expanded')).toBe('false');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('counts one onChange for a plain click and none for a click on the checked option', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    await user.click(genreWord());
+    await user.click(radio(/essays/));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    await user.click(genreWord());
+    await user.click(radio(/any genre/));
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
 });
 

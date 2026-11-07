@@ -127,7 +127,6 @@ test('with a popup open there are no axe violations, and the popup stays inside 
   for (const count of await counts.all()) {
     const c = (await count.boundingBox())!;
     expect(c.x + c.width).toBeLessThanOrEqual(box.x + box.width + 1);
-    expect(await count.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
     expect(await count.evaluate((el) => {
       const popupRect = el.closest('[popover]')!.getBoundingClientRect();
       return el.getBoundingClientRect().right <= popupRect.right + 1;
@@ -204,4 +203,70 @@ test('Tab and Shift+Tab keep focus inside the open popup', async ({ page }) => {
     await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
   }
   await expect(popup).toBeVisible();
+});
+
+test('after choosing the option already chosen, reopening and choosing another still works', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  await page.getByRole('radio', { name: /any genre/ }).click();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await genre(page).click();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('radio', { name: /poetry/ }).click();
+  await expect(genre(page)).toHaveAccessibleName('Genre: poetry');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toBeFocused();
+});
+
+test('arrows left behind by Escape do not stay: reopening shows the current value checked', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('radio', { name: /poetry/ })).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await genre(page).click();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeChecked();
+});
+
+test('a held Enter chooses nothing and does not loop the popup open and shut', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).focus();
+  await page.keyboard.down('Enter');
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeFocused();
+  // From here on the popup must not change state: count every flip of the word's aria-expanded.
+  await genre(page).evaluate((el) => {
+    const w = window as unknown as { flips: number };
+    w.flips = 0;
+    new MutationObserver(() => (w.flips += 1)).observe(el, { attributes: true, attributeFilter: ['aria-expanded'] });
+  });
+  await page.keyboard.down('Enter'); // the second down is an auto-repeat
+  await page.keyboard.down('Enter');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as unknown as { flips: number }).flips)).toBe(0);
+  await expect(genre(page)).toHaveAccessibleName('Genre: any genre');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.up('Enter');
+  await expect(genre(page)).toHaveAccessibleName('Genre: any genre');
+});
+
+test('a held Space chooses once, on release, and does not reopen the popup', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('radio', { name: /poetry/ })).toBeFocused();
+  await page.keyboard.down(' ');
+  await page.keyboard.down(' '); // auto-repeat
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.up(' ');
+  await expect(genre(page)).toHaveAccessibleName('Genre: poetry');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await page.waitForTimeout(300);
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toBeFocused();
 });

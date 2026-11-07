@@ -102,7 +102,9 @@ function Options({
   formatCount: (n: number) => string;
   choose: (value: string) => void;
 }) {
-  const [draft, setDraft] = useState(value);
+  // Arrow keys only browse: `moved` is where they got to, and until they move, the draft is the current value.
+  const [moved, setMoved] = useState<string | null>(null);
+  const draft = moved ?? value;
   const moving = useRef(false);
   const done = useRef(false);
   const spaceDown = useRef(false);
@@ -117,10 +119,10 @@ function Options({
         moving.current = MOVES.has(event.key);
         if (event.key === 'Enter') {
           event.preventDefault();
-          finish(draft);
+          if (!event.repeat) finish(draft);
         } else if (event.key === ' ') {
-          // Like a button, Space chooses when it is released. Choosing on keydown would hand focus back to the word
-          // before the keyup, and the word (a button) would take that keyup as its own press and reopen the popup.
+          // Like a button, Space chooses when it is released, so a held Space cannot repeat onto the word once focus
+          // goes back to it.
           event.preventDefault();
           spaceDown.current = true;
         }
@@ -141,7 +143,7 @@ function Options({
         value={draft}
         width={POPUP_WIDTH}
         onChange={(next) => {
-          setDraft(next);
+          setMoved(next);
           if (!moving.current) finish(next);
         }}
       >
@@ -191,9 +193,11 @@ function Word({
         </Link>
       )}
     >
-      {(value, _commit, close) => (
+      {(value, _commit, close, state) => (
+        // The popup's content stays mounted while closed, so give each open cycle its own Options: a choice made in
+        // one cycle (or arrows left behind by Escape) must not leak into the next.
         <Options
-          key={word.value}
+          key={state.isOpen ? 'open' : 'closed'}
           word={word}
           value={value}
           formatCount={formatCount}
