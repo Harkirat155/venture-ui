@@ -120,10 +120,18 @@ test('with a popup open there are no axe violations, and the popup stays inside 
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
   expect(box.y).toBeGreaterThanOrEqual(0);
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
-  // Every count sits fully inside the popup: none is clipped at its right edge.
-  for (const count of await popup.getByText(/^[\d,]+$/).all()) {
+  // Every count shows whole: its text is not truncated by its own box or by the popup.
+  const counts = popup.locator('[data-sentence-filter-count]');
+  expect(await counts.count()).toBeGreaterThan(0);
+  await expect(counts.first()).toHaveText('12,345 books');
+  for (const count of await counts.all()) {
     const c = (await count.boundingBox())!;
-    expect(c.x + c.width).toBeLessThanOrEqual(box.x + box.width);
+    expect(c.x + c.width).toBeLessThanOrEqual(box.x + box.width + 1);
+    expect(await count.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    expect(await count.evaluate((el) => {
+      const popupRect = el.closest('[popover]')!.getBoundingClientRect();
+      return el.getBoundingClientRect().right <= popupRect.right + 1;
+    })).toBe(true);
   }
   expect(await axeViolations(page)).toEqual([]);
   await expect(page).toHaveScreenshot('SentenceFilter-LongSentence-open.png', { fullPage: true });
@@ -136,4 +144,62 @@ test('the popup of a small line also stays inside the viewport', async ({ page }
   const viewport = page.viewportSize()!;
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+});
+
+test('Space chooses the option that arrow keys moved to', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('radio', { name: /poetry/ })).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(genre(page)).toHaveAccessibleName('Genre: poetry');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toBeFocused();
+});
+
+test('clicking the checked option closes the popup and returns focus, changing nothing', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  await page.getByRole('radio', { name: /any genre/ }).click();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toBeFocused();
+  await expect(genre(page)).toHaveAccessibleName('Genre: any genre');
+});
+
+test('clicking an option that arrow keys already moved to chooses it and closes', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  await page.getByRole('radio', { name: /any genre/ }).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('radio', { name: /poetry/ })).toBeChecked();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('radio', { name: /poetry/ }).click();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toHaveAccessibleName('Genre: poetry');
+  await expect(genre(page)).toBeFocused();
+});
+
+test('Enter on the unchanged option closes without changing anything, and a disabled option never closes', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  await page.getByRole('radio', { name: /drama/ }).click({ force: true });
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('radio', { name: /any genre/ }).focus();
+  await page.keyboard.press('Enter');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toBeFocused();
+  await expect(genre(page)).toHaveAccessibleName('Genre: any genre');
+});
+
+test('Tab and Shift+Tab keep focus inside the open popup', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  const popup = page.getByRole('dialog', { name: 'Genre' });
+  for (const key of ['Tab', 'Tab', 'Shift+Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    expect(await page.evaluate(() => document.activeElement?.closest('[popover]') != null)).toBe(true);
+    await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  }
+  await expect(popup).toBeVisible();
 });

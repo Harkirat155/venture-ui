@@ -60,6 +60,8 @@ const CONTROL = 'data-sentence-filter-control';
 
 // A control inside running text. Its hit area grows to 44 px (--spacing-11) with padding that a negative margin
 // takes back, so the line spacing of the sentence does not change. `1lh` is the line height the control inherits.
+// It stays inline-block: with `display: inline` the button is still an atomic box (a button cannot break across
+// lines), so the break before a long word did not change, and the negative margin is what keeps line spacing.
 const GROW = 'max(0px, calc((var(--spacing-11) - 1lh) / 2))';
 const controlStyle: CSSProperties = {
   display: 'inline-block',
@@ -84,7 +86,9 @@ const removeStyle: CSSProperties = {
 const POPUP_WIDTH = 'min(22rem, calc(100vw - var(--spacing-16)))';
 
 // A radio group chooses as the arrow keys move, which here would change the sentence and close the popup on the
-// first arrow press. So arrows only move through the options, and a click, Space or Enter chooses.
+// first arrow press. So arrows only move through the options, and a click, Space or Enter chooses. Browsers also
+// send a click to the radio an arrow key moved to, so `moving` holds from the arrow's keydown to its keyup and such
+// a click is ignored. The popup closes on every choice; `choose` says whether the choice changed anything.
 const MOVES = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End']);
 
 function Options({
@@ -100,17 +104,28 @@ function Options({
 }) {
   const [draft, setDraft] = useState(value);
   const moving = useRef(false);
+  const done = useRef(false);
+  const finish = (next: string) => {
+    if (done.current) return;
+    done.current = true;
+    choose(next);
+  };
   return (
     <VStack
       onKeyDownCapture={(event) => {
         moving.current = MOVES.has(event.key);
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          choose(draft);
+          finish(draft);
         }
       }}
       onKeyUp={() => {
         moving.current = false;
+      }}
+      onClick={(event) => {
+        const target = event.target as HTMLElement;
+        if (moving.current || !(target instanceof HTMLInputElement) || target.type !== 'radio' || target.disabled) return;
+        finish(target.value);
       }}
     >
       <RadioList
@@ -120,7 +135,7 @@ function Options({
         width={POPUP_WIDTH}
         onChange={(next) => {
           setDraft(next);
-          if (!moving.current) choose(next);
+          if (!moving.current) finish(next);
         }}
       >
         {word.options.map((option) => (
@@ -131,7 +146,7 @@ function Options({
             isDisabled={option.disabled}
             endContent={
               option.count == null ? undefined : (
-                <Text type="supporting" hasTabularNumbers>
+                <Text type="supporting" hasTabularNumbers {...{ 'data-sentence-filter-count': '' }}>
                   {formatCount(option.count)}
                 </Text>
               )
@@ -171,11 +186,12 @@ function Word({
     >
       {(value, _commit, close) => (
         <Options
+          key={word.value}
           word={word}
           value={value}
           formatCount={formatCount}
           choose={(next) => {
-            onChange(word.id, next);
+            if (next !== word.value) onChange(word.id, next);
             close();
           }}
         />
@@ -203,7 +219,8 @@ export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCoun
     const p = pending.current;
     if (p == null || p.removed.isConnected) return;
     pending.current = null;
-    const target = [p.before, p.after].find((el) => el?.isConnected) ?? root.current?.querySelector<HTMLElement>(`[${CONTROL}]`);
+    const target =
+      [p.before, p.after].find((el) => el?.isConnected) ?? root.current?.querySelector<HTMLElement>(`[${CONTROL}]`) ?? root.current;
     target?.focus();
   });
 
@@ -236,11 +253,11 @@ export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCoun
   });
 
   return as === 'p' ? (
-    <Text as="p" type="inherit" ref={root}>
+    <Text as="p" type="inherit" ref={root} tabIndex={-1}>
       {content}
     </Text>
   ) : (
-    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root}>
+    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1}>
       {content}
     </Heading>
   );

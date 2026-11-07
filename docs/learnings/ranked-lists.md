@@ -52,7 +52,7 @@ Problem: rows that differ in shape are hard to compare. Mechanism: a fixed colum
 Problem: the reader cannot tell what is a control. Mechanism: one consistent cue such as a caret, an outline, a
 chevron or link colour.
 - Examples: carets and outlines on Letterboxd, Google Flights and JustWatch; blue text on Wikipedia.
-- HN is the weak case: links are not underlined until hover.
+- HN is the weak case: its links are not underlined at rest. What hover does was not checked.
 
 ### 5. Print the sort key and the rule in words, with n (seen in 4)
 Problem: a ranking looks arbitrary, or like a claim. Mechanism: say what the order is, and who or what it counts,
@@ -70,21 +70,24 @@ Problem: the reader must decide before seeing anything. Mechanism: open on a use
 ### 7. Keep selling out of the first screen (seen in 4)
 Problem: the page promotes before it helps. Mechanism: banners, SEO copy and promotions come after the first results.
 - Comply: SpaceX, HN, Wikipedia, Google Flights. Violate: JustWatch, Letterboxd, Apple, Spotify.
-- JustWatch has about 50 controls and about 370 px before the first result. The report's reading is that the site is
-  paid per outbound click, so the layout serves that.
+- JustWatch has about 50 controls (counted by hand) and about 370 px before the first result.
 
 ### 8. On a phone keep the row, collapse the controls (seen in 4)
 Problem: the phone page becomes a different product. Mechanism: keep the row's wording and evidence, fold the
 controls behind one door.
 - Examples: HN and Wikipedia keep their rows. JustWatch folds eight dropdowns into one funnel. Google Flights scrolls
   its chips sideways and truncates times, which loses evidence. Do not copy that part.
-- None of the eight had a good phone layout, so there is no model to copy whole.
+- Among the 390 px captures, none gave a good phone layout to copy whole. Some of those captures were clipped
+  desktop layouts or caught mid-fade, so this says little about each site's real mobile page.
 
 ### 9. A control's state is readable without opening it (seen in 3)
 Problem: the reader cannot tell what is applied. Mechanism: the control shows its value, and one count says how many
 results remain.
-- Examples: Letterboxd's "Genre" chip shows the chosen genre once one is picked. JustWatch prints "164,146 titles sorted by
-  Popularity". Google Flights marks the selected segment and says "35 results returned."
+- Examples: JustWatch prints "164,146 titles sorted by Popularity". Google Flights marks the selected segment and
+  says "35 results returned." A Letterboxd page loaded from a URL that already named a genre showed that genre where
+  the "Genre" chip had been. Its results never loaded and no chip was clicked.
+- The applied look of JustWatch's and Google Flights' filters was not seen, so what a filled-in control looks like
+  there is unknown.
 - Neutral form: the chip reads "Poetry", not "Genre"; a line says "212 books, sorted by loans".
 - Swap test (reasoned): a fixed "Genre" label forces you to open the menu to learn the state.
 - This is the reason `SentenceFilter` exists. See "Sentence or filter row" below.
@@ -125,7 +128,7 @@ Treat these as ideas to test, not as findings.
 - Show the alternative ranking's value in its tab label: "Cheapest from X" (Google Flights).
 - A change chip against a typical value, coloured only where better (Google Flights).
 - Restate the query above the answer (Google Flights).
-- A second colour for visited links (Wikipedia).
+- A second colour for visited links (Wikipedia). No link was visited in the study, so how the colour behaves was not tested.
 - A sentence lead-in before a list, "The top 10 are:" (Wikipedia).
 - A verb on each button, not "Learn more" everywhere (SpaceX).
 - One value alone on a row, with space around it, to make a number feel large (SpaceX, "100+ t").
@@ -150,8 +153,11 @@ Use a labelled filter row when:
 - Options need search, multiple choice or ranges. `SentenceFilter` picks one value per word.
 - People compare or scan the filters as a set.
 
-Untested: no stranger has used a sentence filter in this library. It follows principle 9 and has passed automated
-keyboard and accessibility checks, which say nothing about whether people understand it. Test it with a few people
+Untested: no stranger has used a sentence filter in this library. It follows principle 9 and has passed these
+checks. Unit tests cover names, choosing, Escape, disabled options, the checked option and token removal. Browser
+tests cover arrow keys, Enter, Space, Tab staying in the popup, focus return, 44 px targets, no sideways scroll at
+390 px, and an axe scan with the popup open at 390 px and 1280 px, light and dark. None of that says whether
+people understand it, and no screen reader was run. Test it with a few people
 before you commit a product to it, and keep a labelled row ready as the fallback.
 
 ## Checklist before shipping a list page

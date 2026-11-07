@@ -36,6 +36,11 @@ export default {
           'Pass as="h1" (or h2, h3) when the sentence is the title of the page or section. A heading takes its size from the theme; with as="p" the sentence takes the font size of its parent.',
       },
       {
+        guidance: true,
+        description:
+          'Expect the open popup to cover the words after the one it belongs to. Choosing an option or pressing Escape closes it and shows them again. This is by design: the popup sits under its word and does not push the sentence apart.',
+      },
+      {
         guidance: false,
         description:
           'Use it for more than about four words. Past that the sentence stops being scannable; use a filter row or a dialog.',
@@ -54,9 +59,9 @@ export default {
         name: 'Options',
         category: 'Keyboard',
         criterion: '2.1.1 Keyboard',
-        requirement: 'Arrow keys move, Enter or Space chooses, Escape closes',
+        requirement: 'Arrow keys move, Enter or Space chooses, Escape closes, Tab stays inside',
         description:
-          'Arrow keys move through the options without choosing, unlike a bare radio group, so a keyboard user can browse. Enter or Space (or a click) chooses, closes the popup and returns focus to the word. Escape closes without choosing. Disabled options are skipped.',
+          'Arrow keys move through the options without choosing, unlike a bare radio group, so a keyboard user can browse. Enter, Space or a click chooses, closes the popup and returns focus to the word. Choosing the option that is already current closes the popup and returns focus the same way, but does not call onChange. Escape closes without choosing. Disabled options are skipped and a click on one does nothing. Tab and Shift+Tab keep focus inside the open popup, so focus never leaves while the word still reads as expanded.',
       },
       {
         name: 'Selected option',
@@ -72,6 +77,14 @@ export default {
         requirement: 'Focus moves to the word before the token',
         description:
           'Removing a token takes its button away. Focus moves to the control before it, else the control after it, instead of falling to the page.',
+      },
+      {
+        name: 'Live updates',
+        category: 'Content',
+        criterion: '4.1.3 Status Messages',
+        requirement: 'The product announces the new result',
+        description:
+          'The component does not announce a changed word, a removed token or the new result count. The product that owns the results owns a live region (role="status") for that message.',
       },
       {
         name: 'Target size',
@@ -100,7 +113,8 @@ export default {
     {
       name: 'onChange',
       type: '(id: string, value: string) => void',
-      description: 'An option was chosen in the word with that id. Called once per choice, after which the popup closes.',
+      description:
+        'An option was chosen in the word with that id, and it differs from the word\'s current value. Called once per choice, then the popup closes. Choosing the current option closes the popup without calling it.',
       required: true,
     },
     {

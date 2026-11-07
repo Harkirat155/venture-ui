@@ -49,6 +49,7 @@ function Demo({ as, long = false, withToken = false }: { as: SentenceFilterProps
       parts={parts}
       onChange={(id, value) => setValues((current) => ({ ...current, [id]: value }))}
       onRemove={() => setAuthor(false)}
+      formatCount={long ? (n) => `${n.toLocaleString()} books` : undefined}
     />
   );
 }

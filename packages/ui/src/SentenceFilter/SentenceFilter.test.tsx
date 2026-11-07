@@ -110,6 +110,39 @@ describe('SentenceFilter choosing', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('closes and returns focus without calling onChange when the already-chosen option is clicked', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    await user.click(word);
+    await user.click(radio(/any genre/));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(word.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(word);
+  });
+
+  it('keeps the popup open when a disabled option is clicked', async () => {
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    await user.click(word);
+    await user.click(radio(/drama/));
+    expect(word.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('shows the new value as checked when value changes while the popup is open', async () => {
+    const user = userEvent.setup();
+    const withValue = (value: string, label: string): SentencePart[] =>
+      parts.map((part) => (typeof part !== 'string' && part.type === 'word' && part.id === 'genre' ? { ...part, value, label } : part));
+    const view = render(<SentenceFilter parts={withValue('any', 'any genre')} onChange={() => {}} />);
+    await user.click(screen.getByRole('button', { name: 'Genre: any genre' }));
+    expect(radio(/any genre/).checked).toBe(true);
+    view.rerender(<SentenceFilter parts={withValue('poetry', 'poetry')} onChange={() => {}} />);
+    expect(radio(/poetry/).checked).toBe(true);
+    expect(radio(/any genre/).checked).toBe(false);
+  });
+
   it('opens from the keyboard with Enter', async () => {
     const user = userEvent.setup();
     render(<SentenceFilter parts={parts} onChange={() => {}} />);
@@ -128,6 +161,13 @@ describe('SentenceFilter options', () => {
     await user.click(screen.getByRole('button', { name: 'Genre: any genre' }));
     return { onChange, user, ...view };
   }
+
+  it('exposes the word as a dialog trigger and the popup as a dialog named for the dimension', async () => {
+    await open();
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    expect(word.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(screen.getByRole('dialog', { name: 'Genre', hidden: true })).toBeTruthy();
+  });
 
   it('marks the current option as checked', async () => {
     await open();
@@ -181,6 +221,18 @@ describe('SentenceFilter token', () => {
     await user.click(screen.getByRole('button', { name: 'Remove author filter: Ada' }));
     expect(screen.queryByText('with Ada')).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Language: any language' }));
+  });
+
+  it('moves focus to the sentence itself when the last control is removed', async () => {
+    const user = userEvent.setup();
+    function Host() {
+      const [shown, setShown] = useState(true);
+      const list: SentencePart[] = shown ? ['Showing ', parts[parts.length - 1] as SentencePart] : ['Showing '];
+      return <SentenceFilter parts={list} onChange={() => {}} onRemove={() => setShown(false)} />;
+    }
+    const { container } = render(<Host />);
+    await user.click(screen.getByRole('button', { name: 'Remove author filter: Ada' }));
+    expect(document.activeElement).toBe(container.querySelector('p'));
   });
 
   it('renders no remove button without onRemove', () => {
