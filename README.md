@@ -23,7 +23,7 @@ plugs it in here; improvements flow back through pull requests.
   the product.
 - Product themes and brand material never live here — this repo is public.
 
-How a product uses it: [`docs/consuming.md`](docs/consuming.md). Licence: MIT.
+How a product uses it: [`docs/consuming.md`](docs/consuming.md). Designing a list or ranking page: [`docs/learnings/ranked-lists.md`](docs/learnings/ranked-lists.md). Licence: MIT.
 
 ## Develop
 Node 24 and pnpm (the version is pinned in `packageManager`).

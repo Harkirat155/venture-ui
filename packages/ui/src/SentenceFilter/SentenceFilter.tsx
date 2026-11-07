@@ -81,7 +81,7 @@ const removeStyle: CSSProperties = {
 };
 
 // The popup is no wider than the viewport minus a gutter on each side.
-const POPUP_WIDTH = 'min(22rem, calc(100vw - var(--spacing-8)))';
+const POPUP_WIDTH = 'min(22rem, calc(100vw - var(--spacing-16)))';
 
 // A radio group chooses as the arrow keys move, which here would change the sentence and close the popup on the
 // first arrow press. So arrows only move through the options, and a click, Space or Enter chooses.
@@ -104,7 +104,10 @@ function Options({
     <VStack
       onKeyDownCapture={(event) => {
         moving.current = MOVES.has(event.key);
-        if (event.key === 'Enter') choose(draft);
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          choose(draft);
+        }
       }}
       onKeyUp={() => {
         moving.current = false;
@@ -192,7 +195,7 @@ const defaultFormatCount = (n: number) => n.toLocaleString();
  * `onChange`.
  */
 export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCount = defaultFormatCount }: SentenceFilterProps) {
-  const root = useRef<HTMLElement>(null);
+  const root = useRef<HTMLElement & HTMLHeadingElement>(null);
   const pending = useRef<Pending | null>(null);
 
   // After a token is removed its button is gone, and focus would fall to the page. Move it to a neighbour.

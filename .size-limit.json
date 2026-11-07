@@ -34,5 +34,18 @@
     "gzip": true,
     "running": false,
     "limit": "103665 B"
+  },
+  {
+    "name": "@venture-ui/ui/SentenceFilter, with the Astryx parts it pulls in (gzip, react external)",
+    "path": "packages/ui/dist/SentenceFilter/SentenceFilter.js",
+    "import": "{ SentenceFilter }",
+    "ignore": [
+      "react",
+      "react-dom",
+      "react/jsx-runtime"
+    ],
+    "gzip": true,
+    "running": false,
+    "limit": "63100 B"
   }
 ]

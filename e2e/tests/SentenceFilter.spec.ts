@@ -1,0 +1,139 @@
+import { expect, test, type Page } from '@playwright/test';
+import { axeViolations } from './axe';
+import { TEST_TIMEOUT_MS } from './budget';
+
+test.describe.configure({ timeout: TEST_TIMEOUT_MS });
+
+async function openStory(page: Page, name: string) {
+  await page.goto(`/#/SentenceFilter/${name}`);
+  await expect(page.locator(`main[data-story-page="SentenceFilter/${name}"]`)).toBeVisible();
+}
+
+const genre = (page: Page) => page.getByRole('button', { name: /^Genre: / });
+const language = (page: Page) => page.getByRole('button', { name: /^Language: / });
+
+test('choosing an option by click changes the word, closes the popup and returns focus to the word', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('radio', { name: /poetry/ }).click();
+  await expect(genre(page)).toHaveAccessibleName('Genre: poetry');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(genre(page)).toBeFocused();
+  await expect(page.getByRole('heading', { level: 2 })).toHaveText('Newest poetry in any language');
+});
+
+test('Escape closes the popup, returns focus to the word and changes nothing', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await language(page).click();
+  await expect(page.getByRole('radio', { name: /French/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(language(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(language(page)).toBeFocused();
+  await expect(language(page)).toHaveAccessibleName('Language: any language');
+});
+
+test('arrow keys browse without choosing and skip a disabled option; Enter chooses', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).focus();
+  await page.keyboard.press('Enter');
+  const options = ['any genre', 'poetry', 'essays', 'travel'];
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeFocused();
+  for (const name of options.slice(1)) {
+    await page.keyboard.press('ArrowDown');
+    // "drama" sits between essays and travel and is disabled, so it never takes focus.
+    await expect(page.getByRole('radio', { name: new RegExp(name) })).toBeFocused();
+  }
+  await expect(genre(page)).toHaveAccessibleName('Genre: any genre');
+  await expect(genre(page)).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('radio', { name: /drama/ })).toBeDisabled();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.getByRole('radio', { name: /essays/ })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(genre(page)).toHaveAccessibleName('Genre: essays');
+  await expect(genre(page)).toBeFocused();
+});
+
+test('the selected option has a checked radio, and counts show beside the labels', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  await genre(page).click();
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /poetry/ })).not.toBeChecked();
+  await expect(page.getByText('12,345')).toBeVisible();
+  await expect(page.getByText('87', { exact: true })).toBeVisible();
+});
+
+test('a word never breaks mid-trigger, and the sentence never scrolls sideways', async ({ page }) => {
+  await openStory(page, 'LongSentence');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  // "any language" is short: it must sit on one line whatever the width.
+  const lines = await language(page).evaluate((el) => el.getClientRects().length);
+  expect(lines).toBe(1);
+});
+
+test('every control is at least 44 px tall, and the lines of the sentence keep the text line height', async ({ page }) => {
+  await openStory(page, 'SmallLine');
+  for (const control of await page.locator('[data-sentence-filter-control]').all()) {
+    const box = await control.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(43.9);
+  }
+  const { height, lineHeight } = await page.locator('p:has([data-sentence-filter-control])').first().evaluate((p) => ({
+    height: (p.parentElement ?? p).getBoundingClientRect().height,
+    lineHeight: parseFloat(getComputedStyle(p).lineHeight),
+  }));
+  // The paragraph is a whole number of text lines tall: the 44 px hit areas did not push lines apart.
+  const lineCount = Math.round(height / lineHeight);
+  expect(Math.abs(height - lineCount * lineHeight), `height ${height}, line ${lineHeight}`).toBeLessThan(1.5);
+});
+
+test('words take their font size from the heading, or from the parent line', async ({ page }) => {
+  await openStory(page, 'LargeHeading');
+  const large = await page.getByRole('heading', { level: 2 }).evaluate((h) => [getComputedStyle(h).fontSize, getComputedStyle(h.querySelector('button')!).fontSize]);
+  expect(large[1]).toBe(large[0]);
+  await openStory(page, 'SmallLine');
+  const small = await page.locator('p:has([data-sentence-filter-control])').first().evaluate((p) => [getComputedStyle(p.parentElement!).fontSize, getComputedStyle(p.querySelector('button')!).fontSize, getComputedStyle(p).fontSize]);
+  expect(small[1]).toBe(small[0]);
+  expect(small[2]).toBe(small[0]);
+  const heading = await page.getByRole('heading', { level: 1 }).evaluate((h) => getComputedStyle(h).fontSize).catch(() => '');
+  expect(parseFloat(large[0] ?? '0')).toBeGreaterThan(parseFloat(small[0] ?? '0') - 0.01);
+  void heading;
+});
+
+test('removing a token moves focus to the word before it', async ({ page }) => {
+  await openStory(page, 'WithToken');
+  await expect(page.getByText('by Ada Lovelace')).toBeVisible();
+  await page.getByRole('button', { name: 'Remove author filter: Ada Lovelace' }).click();
+  await expect(page.getByText('by Ada Lovelace')).toHaveCount(0);
+  await expect(language(page)).toBeFocused();
+});
+
+test('with a popup open there are no axe violations, and the popup stays inside the viewport', async ({ page }) => {
+  await openStory(page, 'LongSentence');
+  await genre(page).click();
+  const popup = page.getByRole('dialog', { name: 'Genre' });
+  await expect(popup).toBeVisible();
+  // The longest option label wraps instead of widening the popup past the screen.
+  await expect(page.getByRole('radio', { name: /travel writing/ })).toBeVisible();
+  const viewport = page.viewportSize()!;
+  const box = (await popup.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+  // Every count sits fully inside the popup: none is clipped at its right edge.
+  for (const count of await popup.getByText(/^[\d,]+$/).all()) {
+    const c = (await count.boundingBox())!;
+    expect(c.x + c.width).toBeLessThanOrEqual(box.x + box.width);
+  }
+  expect(await axeViolations(page)).toEqual([]);
+  await expect(page).toHaveScreenshot('SentenceFilter-LongSentence-open.png', { fullPage: true });
+});
+
+test('the popup of a small line also stays inside the viewport', async ({ page }) => {
+  await openStory(page, 'LongSentenceSmall');
+  await language(page).click();
+  const box = (await page.getByRole('dialog', { name: 'Language' }).boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+});

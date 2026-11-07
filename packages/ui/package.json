@@ -19,11 +19,16 @@
       "types": "./dist/DiffView/DiffView.d.ts",
       "default": "./dist/DiffView/DiffView.js"
     },
+    "./SentenceFilter": {
+      "types": "./dist/SentenceFilter/SentenceFilter.d.ts",
+      "default": "./dist/SentenceFilter/SentenceFilter.js"
+    },
     "./Timeline": {
       "types": "./dist/Timeline/Timeline.d.ts",
       "default": "./dist/Timeline/Timeline.js"
     },
     "./templates/diffview-showcase": "./templates/diffview-showcase.tsx",
+    "./templates/sentencefilter-showcase": "./templates/sentencefilter-showcase.tsx",
     "./templates/timeline-showcase": "./templates/timeline-showcase.tsx",
     "./package.json": "./package.json"
   },
