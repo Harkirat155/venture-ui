@@ -105,6 +105,7 @@ function Options({
   const [draft, setDraft] = useState(value);
   const moving = useRef(false);
   const done = useRef(false);
+  const spaceDown = useRef(false);
   const finish = (next: string) => {
     if (done.current) return;
     done.current = true;
@@ -114,13 +115,19 @@ function Options({
     <VStack
       onKeyDownCapture={(event) => {
         moving.current = MOVES.has(event.key);
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (event.key === 'Enter') {
           event.preventDefault();
           finish(draft);
+        } else if (event.key === ' ') {
+          // Like a button, Space chooses when it is released. Choosing on keydown would hand focus back to the word
+          // before the keyup, and the word (a button) would take that keyup as its own press and reopen the popup.
+          event.preventDefault();
+          spaceDown.current = true;
         }
       }}
-      onKeyUp={() => {
+      onKeyUp={(event) => {
         moving.current = false;
+        if (event.key === ' ' && spaceDown.current) finish(draft);
       }}
       onClick={(event) => {
         const target = event.target as HTMLElement;
