@@ -150,6 +150,8 @@ test('Space chooses the option that arrow keys moved to', async ({ page }) => {
   await openStory(page, 'LargeHeading');
   await genre(page).focus();
   await page.keyboard.press('Enter');
+  // Focus moves into the popup a moment after it opens; arrow keys pressed sooner would go to the word.
+  await expect(page.getByRole('radio', { name: /any genre/ })).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('radio', { name: /poetry/ })).toBeFocused();
   await page.keyboard.press('Space');
