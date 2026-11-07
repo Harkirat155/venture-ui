@@ -1,0 +1,191 @@
+import { cleanup, render, screen, within } from '@testing-library/react';
+import { userEvent } from '@testing-library/user-event';
+import { useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SentenceFilter, type SentencePart } from './SentenceFilter.js';
+
+// jsdom has no Popover API. This stand-in opens and closes the popup the way the browser reports it.
+const originalMatches = HTMLElement.prototype.matches;
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle');
+    Object.defineProperty(event, 'newState', { value: 'open' });
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle');
+    Object.defineProperty(event, 'newState', { value: 'closed' });
+    this.dispatchEvent(event);
+  });
+  Object.defineProperty(HTMLElement.prototype, 'matches', {
+    configurable: true,
+    value: function (this: HTMLElement, selector: string): boolean {
+      return selector === ':popover-open' ? this.hasAttribute('popover-open') : originalMatches.call(this, selector);
+    },
+  });
+});
+afterEach(cleanup);
+
+// jsdom treats a [popover] as hidden whatever the mock says, so the popup is queried with hidden: true.
+const radio = (name: RegExp) => screen.getByRole('radio', { name, hidden: true }) as HTMLInputElement;
+
+const parts: SentencePart[] = [
+  'Newest ',
+  {
+    type: 'word',
+    id: 'genre',
+    name: 'Genre',
+    label: 'any genre',
+    value: 'any',
+    options: [
+      { value: 'any', label: 'any genre', count: 12345 },
+      { value: 'poetry', label: 'poetry', count: 87 },
+      { value: 'drama', label: 'drama', count: 0, disabled: true },
+      { value: 'essays', label: 'essays' },
+    ],
+  },
+  ' in ',
+  {
+    type: 'word',
+    id: 'lang',
+    name: 'Language',
+    label: 'any language',
+    value: 'any',
+    options: [
+      { value: 'any', label: 'any language' },
+      { value: 'fr', label: 'French' },
+    ],
+  },
+  ' ',
+  { type: 'token', id: 'author', label: 'with Ada', removeLabel: 'Remove author filter: Ada' },
+];
+
+describe('SentenceFilter reading', () => {
+  it('names each word "dimension: word" and makes the heading text the sentence', () => {
+    render(<SentenceFilter as="h2" parts={parts} onChange={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Genre: any genre' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Language: any language' })).toBeTruthy();
+    const heading = screen.getByRole('heading', { level: 2 });
+    expect(heading.textContent).toBe('Newest any genre in any language with Ada');
+  });
+
+  it('renders a paragraph by default, and each heading level on request', () => {
+    const { container, rerender } = render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    expect(container.querySelector('p')).toBeTruthy();
+    expect(screen.queryByRole('heading')).toBeNull();
+    rerender(<SentenceFilter as="h1" parts={parts} onChange={() => {}} />);
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
+    rerender(<SentenceFilter as="h3" parts={parts} onChange={() => {}} />);
+    expect(screen.getByRole('heading', { level: 3 })).toBeTruthy();
+  });
+});
+
+describe('SentenceFilter choosing', () => {
+  it('calls onChange once with the id and value, closes the popup and returns focus to the word', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    await user.click(word);
+    expect(word.getAttribute('aria-expanded')).toBe('true');
+    await user.click(radio(/poetry/));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('genre', 'poetry');
+    expect(word.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(word);
+  });
+
+  it('closes on Escape, returns focus to the word and does not call onChange', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={onChange} />);
+    const word = screen.getByRole('button', { name: 'Language: any language' });
+    await user.click(word);
+    expect(word.getAttribute('aria-expanded')).toBe('true');
+    await user.keyboard('{Escape}');
+    expect(word.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(word);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('opens from the keyboard with Enter', async () => {
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    await user.tab();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Genre: any genre' }));
+    await user.keyboard('{Enter}');
+    expect(radio(/poetry/)).toBeTruthy();
+  });
+});
+
+describe('SentenceFilter options', () => {
+  async function open() {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    const view = render(<SentenceFilter parts={parts} onChange={onChange} />);
+    await user.click(screen.getByRole('button', { name: 'Genre: any genre' }));
+    return { onChange, user, ...view };
+  }
+
+  it('marks the current option as checked', async () => {
+    await open();
+    expect(radio(/any genre/).checked).toBe(true);
+    expect(radio(/poetry/).checked).toBe(false);
+  });
+
+  it('shows counts through toLocaleString by default and through formatCount when given', async () => {
+    const { unmount } = await open();
+    expect(screen.getByText((12345).toLocaleString())).toBeTruthy();
+    expect(screen.getByText('87')).toBeTruthy();
+    unmount();
+    cleanup();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={() => {}} formatCount={(n) => `${n} books`} />);
+    await user.click(screen.getByRole('button', { name: 'Genre: any genre' }));
+    expect(screen.getByText('87 books')).toBeTruthy();
+  });
+
+  it('cannot choose a disabled option', async () => {
+    const { onChange, user } = await open();
+    const drama = radio(/drama/);
+    expect(drama.disabled).toBe(true);
+    await user.click(drama);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  // Arrow keys, Enter and Space need real focus and radio-group behaviour, which jsdom does not model well enough:
+  // they are tested in the browser (e2e/tests/SentenceFilter.spec.ts).
+});
+
+describe('SentenceFilter token', () => {
+  it('shows its label and a remove button that calls onRemove with the id', async () => {
+    const onRemove = vi.fn();
+    const user = userEvent.setup();
+    render(<SentenceFilter parts={parts} onChange={() => {}} onRemove={onRemove} />);
+    expect(screen.getByText('with Ada')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Remove author filter: Ada' }));
+    expect(onRemove).toHaveBeenCalledTimes(1);
+    expect(onRemove).toHaveBeenCalledWith('author');
+  });
+
+  it('moves focus to the word before the token when it is removed', async () => {
+    const user = userEvent.setup();
+    function Host() {
+      const [shown, setShown] = useState(true);
+      const list = shown ? parts : parts.slice(0, -2);
+      return <SentenceFilter parts={list} onChange={() => {}} onRemove={() => setShown(false)} />;
+    }
+    render(<Host />);
+    await user.click(screen.getByRole('button', { name: 'Remove author filter: Ada' }));
+    expect(screen.queryByText('with Ada')).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Language: any language' }));
+  });
+
+  it('renders no remove button without onRemove', () => {
+    render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    expect(screen.queryByRole('button', { name: /Remove author/ })).toBeNull();
+    expect(within(screen.getByText('with Ada')).queryByRole('button')).toBeNull();
+  });
+});
