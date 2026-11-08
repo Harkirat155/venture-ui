@@ -76,14 +76,14 @@ const controlStyle: CSSProperties = {
 };
 
 // The word's chevron, scaled with the sentence from a paragraph up to a display heading. A registry icon is a 1em svg
-// in a box whose font size the icon size sets, so the box takes its font size from the word (0.55em) and is 1em
+// in a box whose font size the icon size sets, so the box takes its font size from the word (0.8em) and is 1em
 // square; the svg then fills it exactly and cannot stretch the line. Margin and lift are in the box's own em.
 const chevronStyle: CSSProperties = {
-  fontSize: '0.55em',
+  fontSize: '0.8em',
   inlineSize: '1em',
   blockSize: '1em',
-  marginInlineStart: '0.3em',
-  verticalAlign: '0.15em',
+  marginInlineStart: '0.1em',
+  verticalAlign: '0',
 };
 
 // The remove button sits a little off its label; the gap is padding, so the hit area covers it.
