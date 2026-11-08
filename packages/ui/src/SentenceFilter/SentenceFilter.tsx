@@ -102,9 +102,10 @@ function Options({
   formatCount: (n: number) => string;
   choose: (value: string) => void;
 }) {
-  // Arrow keys only browse: `moved` is where they got to, and until they move, the draft is the current value.
-  const [moved, setMoved] = useState<string | null>(null);
-  const draft = moved ?? value;
+  // Arrow keys only browse: `moved` is where they got to, made against `from`. Until they move, or once the value
+  // changes under them, the draft is the current value.
+  const [moved, setMoved] = useState<{ from: string; to: string } | null>(null);
+  const draft = moved && moved.from === value ? moved.to : value;
   const moving = useRef(false);
   const done = useRef(false);
   const spaceDown = useRef(false);
@@ -143,7 +144,7 @@ function Options({
         value={draft}
         width={POPUP_WIDTH}
         onChange={(next) => {
-          setMoved(next);
+          setMoved({ from: value, to: next });
           if (!moving.current) finish(next);
         }}
       >

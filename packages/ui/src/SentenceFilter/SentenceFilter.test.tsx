@@ -185,14 +185,14 @@ describe('SentenceFilter open cycles and counts', () => {
     expect(genreWord().getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('keeps the same options on screen, now on the new value, when value changes while it is open', async () => {
+  it('does not remount the options when value changes while the popup is open', async () => {
     const user = userEvent.setup();
     const withValue = (value: string, label: string): SentencePart[] =>
       parts.map((part) => (typeof part !== 'string' && part.type === 'word' && part.id === 'genre' ? { ...part, value, label } : part));
     const view = render(<SentenceFilter parts={withValue('any', 'any genre')} onChange={() => {}} />);
     await user.click(genreWord());
-    // jsdom will not focus inside the popup, so prove "no remount" (a remount drops focus to the body): the very same
-    // radio element must survive the change.
+    // No remount: the same radio element stays in the DOM. (jsdom never moves focus into the popup, so this does not
+    // test focus itself.)
     const before = radio(/any genre/);
     view.rerender(<SentenceFilter parts={withValue('poetry', 'poetry')} onChange={() => {}} />);
     expect(radio(/any genre/)).toBe(before);
@@ -237,6 +237,23 @@ describe('SentenceFilter open cycles and counts', () => {
     fireEvent.keyUp(radio(/any genre/), { key: ' ' });
     expect(genreWord().getAttribute('aria-expanded')).toBe('false');
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('drops a browse position when the parent sets a new value while the popup is open', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    const withValue = (value: string): SentencePart[] =>
+      parts.map((part) => (typeof part !== 'string' && part.type === 'word' && part.id === 'genre' ? { ...part, value } : part));
+    const view = render(<SentenceFilter parts={withValue('any')} onChange={onChange} />);
+    await user.click(genreWord());
+    arrowTo(/any genre/, /poetry/);
+    expect(radio(/poetry/).checked).toBe(true);
+    view.rerender(<SentenceFilter parts={withValue('essays')} onChange={onChange} />);
+    expect(radio(/essays/).checked).toBe(true);
+    expect(radio(/poetry/).checked).toBe(false);
+    fireEvent.keyDown(radio(/essays/), { key: 'Enter' });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(genreWord().getAttribute('aria-expanded')).toBe('false');
   });
 
   it('counts one onChange for a plain click and none for a click on the checked option', async () => {
