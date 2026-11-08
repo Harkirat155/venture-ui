@@ -14,6 +14,7 @@ cd "$(dirname "$0")/.."
 DOCKER="${DOCKER:-docker}"
 command -v "$DOCKER" >/dev/null || { echo "docker not found: install it or set DOCKER=/path/to/docker" >&2; exit 2; }
 version="$(node -p "require('./e2e/package.json').devDependencies['@playwright/test']")"
+pnpm_version="$(node -p "require('./package.json').packageManager.split('@')[1]")"
 image="mcr.microsoft.com/playwright:v${version}-noble"
 mkdir -p e2e/snapshots e2e/test-results
 
@@ -24,7 +25,8 @@ owner="$1"; shift
 trap '\''chown -R "$owner" /work/e2e/snapshots /work/e2e/test-results 2>/dev/null || true'\'' EXIT
 mkdir -p /work && tar -xf - -C /work && cd /work
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 E2E_IN_DOCKER=1
-corepack enable
+# Newer Playwright images ship Node without corepack: install the pinned pnpm with npm instead.
+if command -v corepack >/dev/null; then corepack enable; else npm install -g "pnpm@${PNPM_VERSION}" >/dev/null; fi
 pnpm config set store-dir /pnpm-store
 pnpm install --frozen-lockfile
 pnpm --filter "@venture-ui/e2e..." build
@@ -33,7 +35,7 @@ pnpm e2e "$@"
 # COPYFILE_DISABLE: macOS tar would otherwise add ._* metadata files, which Playwright would try to load as tests.
 COPYFILE_DISABLE=1 tar --exclude=node_modules --exclude=dist --exclude=.git --exclude=playwright-report \
   --exclude=e2e/snapshots --exclude=e2e/test-results -cf - . |
-  "$DOCKER" run --rm -i --init --ipc=host ${E2E_PLATFORM:+--platform "$E2E_PLATFORM"} \
+  "$DOCKER" run --rm -i --init --ipc=host ${E2E_PLATFORM:+--platform "$E2E_PLATFORM"} -e PNPM_VERSION="$pnpm_version" \
     -v venture-ui-pnpm-store:/pnpm-store \
     -v "$PWD/e2e/snapshots:/work/e2e/snapshots" \
     -v "$PWD/e2e/test-results:/work/e2e/test-results" \
