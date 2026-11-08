@@ -75,6 +75,14 @@ const controlStyle: CSSProperties = {
   textUnderlineOffset: 'var(--spacing-1)',
 };
 
+// The word's chevron: sized and lifted in em so it tracks the sentence from a paragraph up to a display heading.
+const chevronStyle: CSSProperties = {
+  inlineSize: '0.5em',
+  blockSize: '0.5em',
+  marginInlineStart: '0.15em',
+  verticalAlign: '0.1em',
+};
+
 // The remove button sits a little off its label; the gap is padding, so the hit area covers it.
 const removeStyle: CSSProperties = {
   ...controlStyle,
@@ -191,6 +199,9 @@ function Word({
           style={controlStyle}
         >
           {word.label}
+          {/* The chevron says a word opens a choice before anyone taps it; it scales with the sentence (em), and the
+              link's label already names the control, so the glyph stays hidden from screen readers. */}
+          <Icon icon="chevronDown" color="secondary" style={chevronStyle} />
         </Link>
       )}
     >
@@ -216,6 +227,10 @@ function Word({
 type Pending = { removed: HTMLElement; before: HTMLElement | null; after: HTMLElement | null };
 
 const defaultFormatCount = (n: number) => n.toLocaleString();
+
+/** The sentence as it reads on screen: strings as written, words and tokens by their labels. */
+const sentenceText = (parts: SentencePart[]): string =>
+  parts.map((part) => (typeof part === 'string' ? part : part.label)).join('').replace(/\s+/g, ' ').trim();
 
 /**
  * A filter that reads as a sentence. Each changeable word is a button that opens a list of options; everything else
@@ -269,7 +284,9 @@ export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCoun
       {content}
     </Text>
   ) : (
-    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1}>
+    // A heading's name would otherwise be built from its controls' names ("Genre: any genre"), so a screen reader
+    // listing headings would hear every dimension. Name it by the sentence as it reads.
+    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1} aria-label={sentenceText(parts)}>
       {content}
     </Heading>
   );

@@ -71,6 +71,28 @@ describe('SentenceFilter reading', () => {
     expect(heading.textContent).toBe('Newest any genre in any language with Ada');
   });
 
+  it("names a heading by the sentence alone, not by its controls' names", () => {
+    render(<SentenceFilter as="h1" parts={parts} onChange={() => {}} onRemove={() => {}} />);
+    // Chromium builds a heading's name from its buttons' names ("Genre: any genre"); jsdom does not, so assert the label.
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading.getAttribute('aria-label')).toBe('Newest any genre in any language with Ada');
+    expect(screen.getByRole('button', { name: 'Genre: any genre' })).toBeTruthy();
+  });
+
+  it('marks each word with a hidden chevron that leaves its name and the sentence text alone', () => {
+    render(<SentenceFilter as="h2" parts={parts} onChange={() => {}} />);
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    const glyph = word.querySelector('svg');
+    expect(glyph).toBeTruthy();
+    expect(glyph?.closest('[aria-hidden="true"]')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Newest any genre in any language with Ada');
+  });
+
+  it('gives a paragraph no name of its own', () => {
+    const { container } = render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    expect(container.querySelector('p')?.hasAttribute('aria-label')).toBe(false);
+  });
+
   it('renders a paragraph by default, and each heading level on request', () => {
     const { container, rerender } = render(<SentenceFilter parts={parts} onChange={() => {}} />);
     expect(container.querySelector('p')).toBeTruthy();
