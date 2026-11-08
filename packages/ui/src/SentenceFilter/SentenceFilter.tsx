@@ -75,6 +75,17 @@ const controlStyle: CSSProperties = {
   textUnderlineOffset: 'var(--spacing-1)',
 };
 
+// The word's chevron, scaled with the sentence from a paragraph up to a display heading. A registry icon is a 1em svg
+// in a box whose font size the icon size sets, so the box takes its font size from the word (0.8em) and is 1em
+// square; the svg then fills it exactly and cannot stretch the line. Margin and lift are in the box's own em.
+const chevronStyle: CSSProperties = {
+  fontSize: '0.8em',
+  inlineSize: '1em',
+  blockSize: '1em',
+  marginInlineStart: '0.1em',
+  verticalAlign: '0',
+};
+
 // The remove button sits a little off its label; the gap is padding, so the hit area covers it.
 const removeStyle: CSSProperties = {
   ...controlStyle,
@@ -191,6 +202,9 @@ function Word({
           style={controlStyle}
         >
           {word.label}
+          {/* The chevron says a word opens a choice before anyone taps it; it scales with the sentence (em), and the
+              link's label already names the control, so the glyph stays hidden from screen readers. */}
+          <Icon icon="chevronDown" color="secondary" style={chevronStyle} />
         </Link>
       )}
     >
@@ -216,6 +230,10 @@ function Word({
 type Pending = { removed: HTMLElement; before: HTMLElement | null; after: HTMLElement | null };
 
 const defaultFormatCount = (n: number) => n.toLocaleString();
+
+/** The sentence as it reads on screen: strings as written, words and tokens by their labels. */
+const sentenceText = (parts: SentencePart[]): string =>
+  parts.map((part) => (typeof part === 'string' ? part : part.label)).join('').replace(/\s+/g, ' ').trim();
 
 /**
  * A filter that reads as a sentence. Each changeable word is a button that opens a list of options; everything else
@@ -269,7 +287,9 @@ export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCoun
       {content}
     </Text>
   ) : (
-    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1}>
+    // A heading's name would otherwise be built from its controls' names ("Genre: any genre"), so a screen reader
+    // listing headings would hear every dimension. Name it by the sentence as it reads.
+    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1} aria-label={sentenceText(parts)}>
       {content}
     </Heading>
   );
