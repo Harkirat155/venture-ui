@@ -384,7 +384,7 @@ describe('SentenceFilter word style', () => {
   it('reads as ink with a thin solid underline that turns to ink on hover', () => {
     render(<SentenceFilter parts={parts} onChange={() => {}} />);
     const word = screen.getByRole('button', { name: 'Genre: any genre' });
-    expect(word.style.color).toBe('inherit');
+    expect(word.querySelector('.astryx-text')?.getAttribute('data-color')).toBe('inherit');
     expect(word.style.textDecorationThickness).toBe('0.055em');
     expect(word.style.textUnderlineOffset).toBe('0.13em');
     expect(word.style.textDecorationColor).toBe('var(--color-border-emphasized)');

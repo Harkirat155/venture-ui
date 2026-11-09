@@ -78,7 +78,6 @@ const controlStyle: CSSProperties = {
 // scales from a paragraph up to a display heading.
 const wordStyle = (hot: boolean): CSSProperties => ({
   ...controlStyle,
-  color: 'inherit',
   textDecorationLine: 'underline',
   textDecorationStyle: 'solid',
   textDecorationThickness: '0.055em',
@@ -211,6 +210,7 @@ function Word({
           {...{ [CONTROL]: '' }}
           label={`${word.name}: ${word.label}`}
           type="inherit"
+          color="inherit"
           hasUnderline
           style={wordStyle(hover || trigger['aria-expanded'] === true)}
           onMouseEnter={() => setHover(true)}
