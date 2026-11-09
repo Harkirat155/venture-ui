@@ -112,7 +112,7 @@ export default {
       name: 'parts',
       type: 'SentencePart[]',
       description:
-        'The sentence in reading order. A string is plain text. A word is { type: "word"; id; name; label; value; options: { value; label; count?; disabled? }[] }: name is the dimension for screen readers, label is how the word reads now, value is the current option. A token is { type: "token"; id; label; removeLabel }.',
+        'The sentence in reading order. A string is plain text. A word is { type: "word"; id; name; label; value; options: { value; label; count?; disabled? }[] }: name is the dimension for screen readers, label is how the word reads now, value is the current option, columns (1 or 2, default 1) lays a long list out in two columns. A token is { type: "token"; id; label; removeLabel }.',
       required: true,
     },
     {

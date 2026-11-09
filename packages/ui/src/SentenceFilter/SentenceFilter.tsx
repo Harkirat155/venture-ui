@@ -29,6 +29,8 @@ export type SentenceFilterWord = {
   /** The `value` of the current option. */
   value: string;
   options: SentenceFilterOption[];
+  /** Lay a long list of options out in two columns (a popup of at most 25rem, never wider than the viewport). */
+  columns?: 1 | 2;
 };
 
 /** A fixed phrase that can be taken out of the sentence: "with Ada" and a remove button. */
@@ -108,6 +110,9 @@ const removeStyle: CSSProperties = {
 
 // The popup is no wider than the viewport minus a gutter on each side.
 const POPUP_WIDTH = 'min(22rem, calc(100vw - var(--spacing-16)))';
+const POPUP_WIDTH_WIDE = 'min(25rem, calc(100vw - var(--spacing-16)))';
+// Two columns of equal width; a narrow screen shrinks them with the popup, and labels wrap rather than overflow.
+const twoColumns: CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 'var(--spacing-2)' };
 
 // A radio group chooses as the arrow keys move, which here would change the sentence and close the popup on the
 // first arrow press. So arrows only move through the options, and a click, Space or Enter chooses. Browsers also
@@ -166,7 +171,8 @@ function Options({
         label={word.name}
         isLabelHidden
         value={draft}
-        width={POPUP_WIDTH}
+        width={word.columns === 2 ? POPUP_WIDTH_WIDE : POPUP_WIDTH}
+        controlStyle={word.columns === 2 ? twoColumns : undefined}
         onChange={(next) => {
           setMoved({ from: value, to: next });
           if (!moving.current) finish(next);
