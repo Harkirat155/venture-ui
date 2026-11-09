@@ -379,3 +379,18 @@ describe('SentenceFilter token', () => {
     expect(within(screen.getByText('with Ada')).queryByRole('button')).toBeNull();
   });
 });
+
+describe('SentenceFilter word style', () => {
+  it('reads as ink with a thin solid underline that turns to ink on hover', () => {
+    render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    expect(word.style.color).toBe('inherit');
+    expect(word.style.textDecorationThickness).toBe('0.055em');
+    expect(word.style.textUnderlineOffset).toBe('0.13em');
+    expect(word.style.textDecorationColor).toBe('var(--color-border-emphasized)');
+    fireEvent.mouseEnter(word);
+    expect(word.style.textDecorationColor).toBe('currentcolor');
+    fireEvent.mouseLeave(word);
+    expect(word.style.textDecorationColor).toBe('var(--color-border-emphasized)');
+  });
+});

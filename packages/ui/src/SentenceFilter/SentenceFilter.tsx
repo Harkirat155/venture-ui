@@ -71,19 +71,31 @@ const controlStyle: CSSProperties = {
   marginBlock: `calc(-1 * ${GROW})`,
   paddingInline: 'var(--spacing-1)',
   marginInline: 'calc(-1 * var(--spacing-1))',
-  textDecorationStyle: 'dotted',
-  textUnderlineOffset: 'var(--spacing-1)',
 };
 
+// A word reads as ink in the sentence with a thin, quiet underline that turns to ink on hover and while its choice is
+// open (a link would be coloured and heavier, and would pull the eye off the sentence). The underline is in em, so it
+// scales from a paragraph up to a display heading.
+const wordStyle = (hot: boolean): CSSProperties => ({
+  ...controlStyle,
+  color: 'inherit',
+  textDecorationLine: 'underline',
+  textDecorationStyle: 'solid',
+  textDecorationThickness: '0.055em',
+  textUnderlineOffset: '0.13em',
+  textDecorationColor: hot ? 'currentColor' : 'var(--color-border-emphasized)',
+});
+
 // The word's chevron, scaled with the sentence from a paragraph up to a display heading. A registry icon is a 1em svg
-// in a box whose font size the icon size sets, so the box takes its font size from the word (0.8em) and is 1em
+// in a box whose font size the icon size sets, so the box takes its font size from the word (0.42em) and is 1em
 // square; the svg then fills it exactly and cannot stretch the line. Margin and lift are in the box's own em.
 const chevronStyle: CSSProperties = {
-  fontSize: '0.8em',
+  fontSize: '0.42em',
   inlineSize: '1em',
   blockSize: '1em',
-  marginInlineStart: '0.1em',
-  verticalAlign: '0',
+  marginInlineStart: '0.14em',
+  verticalAlign: '0.09em',
+  color: 'var(--color-border-emphasized)',
 };
 
 // The remove button sits a little off its label; the gap is padding, so the hit area covers it.
@@ -188,6 +200,7 @@ function Word({
   onChange: SentenceFilterProps['onChange'];
   formatCount: (n: number) => string;
 }) {
+  const [hover, setHover] = useState(false);
   return (
     <ComplexSelector<string>
       label={word.name}
@@ -199,12 +212,14 @@ function Word({
           label={`${word.name}: ${word.label}`}
           type="inherit"
           hasUnderline
-          style={controlStyle}
+          style={wordStyle(hover || trigger['aria-expanded'] === true)}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
         >
           {word.label}
           {/* The chevron says a word opens a choice before anyone taps it; it scales with the sentence (em), and the
               link's label already names the control, so the glyph stays hidden from screen readers. */}
-          <Icon icon="chevronDown" color="secondary" style={chevronStyle} />
+          <Icon icon="chevronDown" color="inherit" style={chevronStyle} />
         </Link>
       )}
     >
