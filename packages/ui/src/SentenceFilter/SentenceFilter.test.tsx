@@ -378,4 +378,28 @@ describe('SentenceFilter token', () => {
     expect(screen.queryByRole('button', { name: /Remove author/ })).toBeNull();
     expect(within(screen.getByText('with Ada')).queryByRole('button')).toBeNull();
   });
+
+  it('puts the style prop on the sentence element, as a paragraph or a heading', () => {
+    const { container, rerender } = render(
+      <SentenceFilter parts={parts} onChange={() => {}} style={{ fontFamily: 'serif' }} />,
+    );
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe('serif');
+    rerender(<SentenceFilter as="h2" parts={parts} onChange={() => {}} style={{ fontFamily: 'serif' }} />);
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe('serif');
+  });
+});
+
+describe('SentenceFilter word style', () => {
+  it('reads as ink with a thin solid underline that turns to ink on hover', () => {
+    render(<SentenceFilter parts={parts} onChange={() => {}} />);
+    const word = screen.getByRole('button', { name: 'Genre: any genre' });
+    expect(word.querySelector('.astryx-text')?.getAttribute('data-color')).toBe('inherit');
+    expect(word.style.textDecorationThickness).toBe('0.055em');
+    expect(word.style.textUnderlineOffset).toBe('0.13em');
+    expect(word.style.textDecorationColor).toBe('var(--color-border-emphasized)');
+    fireEvent.mouseEnter(word);
+    expect(word.style.textDecorationColor).toBe('currentcolor');
+    fireEvent.mouseLeave(word);
+    expect(word.style.textDecorationColor).toBe('var(--color-border-emphasized)');
+  });
 });
