@@ -378,6 +378,15 @@ describe('SentenceFilter token', () => {
     expect(screen.queryByRole('button', { name: /Remove author/ })).toBeNull();
     expect(within(screen.getByText('with Ada')).queryByRole('button')).toBeNull();
   });
+
+  it('puts the style prop on the sentence element, as a paragraph or a heading', () => {
+    const { container, rerender } = render(
+      <SentenceFilter parts={parts} onChange={() => {}} style={{ fontFamily: 'serif' }} />,
+    );
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe('serif');
+    rerender(<SentenceFilter as="h2" parts={parts} onChange={() => {}} style={{ fontFamily: 'serif' }} />);
+    expect((container.firstElementChild as HTMLElement).style.fontFamily).toBe('serif');
+  });
 });
 
 describe('SentenceFilter word style', () => {

@@ -54,6 +54,8 @@ export type SentenceFilterProps = {
   as?: 'h1' | 'h2' | 'h3' | 'p';
   /** Formats `count`. Defaults to `toLocaleString`. */
   formatCount?(n: number): string;
+  /** Inline style for the sentence element, such as a face or size of the product's own. Words inherit it. */
+  style?: CSSProperties;
 };
 
 const CONTROL = 'data-sentence-filter-control';
@@ -255,7 +257,7 @@ const sentenceText = (parts: SentencePart[]): string =>
  * is plain text. It fetches nothing and keeps no filter state: pass the sentence in `parts` and update it in
  * `onChange`.
  */
-export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCount = defaultFormatCount }: SentenceFilterProps) {
+export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCount = defaultFormatCount, style }: SentenceFilterProps) {
   const root = useRef<HTMLElement & HTMLHeadingElement>(null);
   const pending = useRef<Pending | null>(null);
 
@@ -298,13 +300,13 @@ export function SentenceFilter({ parts, onChange, onRemove, as = 'p', formatCoun
   });
 
   return as === 'p' ? (
-    <Text as="p" type="inherit" ref={root} tabIndex={-1}>
+    <Text as="p" type="inherit" ref={root} tabIndex={-1} style={style}>
       {content}
     </Text>
   ) : (
     // A heading's name would otherwise be built from its controls' names ("Genre: any genre"), so a screen reader
     // listing headings would hear every dimension. Name it by the sentence as it reads.
-    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1} aria-label={sentenceText(parts)}>
+    <Heading level={Number(as[1]) as 1 | 2 | 3} ref={root} tabIndex={-1} aria-label={sentenceText(parts)} style={style}>
       {content}
     </Heading>
   );
