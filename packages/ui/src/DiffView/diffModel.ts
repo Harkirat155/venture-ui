@@ -15,12 +15,31 @@ export type DiffRow = {
 export type DiffSummary = { added: number; removed: number };
 
 /**
- * Line-level diff of two texts, as one row per line in display order: removed lines come before the added lines that
- * replace them. The algorithm is jsdiff's `diffLines`. A final line break is never a change, and with
- * `normalizeLineEndings` (the default) CRLF and LF are the same.
+ * jsdiff gives up once a diff needs more edits than this. Two unrelated files then take milliseconds instead of
+ * freezing the page, and {@link buildRows} reports `exact: false`.
  */
-export function buildRows(before: string, after: string, normalizeLineEndings = true): DiffRow[] {
-  const changes = diffLines(before, after, { stripTrailingCr: normalizeLineEndings, ignoreNewlineAtEof: true });
+const MAX_EDIT_LENGTH = 1000;
+
+/**
+ * Line-level diff of two texts, as one row per line in display order: removed lines come before the added lines that
+ * replace them. The algorithm is jsdiff's `diffLines`, bounded by {@link MAX_EDIT_LENGTH}. Past that limit the result
+ * the longest common head and the longest common tail that does not overlap it stay as context,
+ * and the lines between are every old line removed, then every new line added. That is `exact: false` unless one side
+ * of the middle is empty (a pure insertion or deletion), which is the exact diff anyway. A final line break is never a change,
+ * and with `normalizeLineEndings` (the default) CRLF and LF are the same.
+ */
+export function buildRows(
+  before: string,
+  after: string,
+  normalizeLineEndings = true,
+): { rows: DiffRow[]; exact: boolean } {
+  const changes = diffLines(before, after, {
+    stripTrailingCr: normalizeLineEndings,
+    ignoreNewlineAtEof: true,
+    maxEditLength: MAX_EDIT_LENGTH,
+  });
+  if (!changes) return coarseRows(before, after, normalizeLineEndings);
+
   const rows: DiffRow[] = [];
   let oldLine = 1;
   let newLine = 1;
@@ -31,7 +50,54 @@ export function buildRows(before: string, after: string, normalizeLineEndings = 
       else rows.push({ kind: 'context', text, oldLine: oldLine++, newLine: newLine++ });
     }
   }
-  return rows;
+  return { rows, exact: true };
+}
+
+/**
+ * A true but coarse diff for when `diffLines` gives up. Shared head and tail are context; the middle is removed
+ * lines, then added lines, with both sides' line numbers kept.
+ */
+function coarseRows(
+  before: string,
+  after: string,
+  normalizeLineEndings: boolean,
+): { rows: DiffRow[]; exact: boolean } {
+  const oldLines = splitLines(before, normalizeLineEndings);
+  const newLines = splitLines(after, normalizeLineEndings);
+  const shared = Math.min(oldLines.length, newLines.length);
+  let head = 0;
+  while (head < shared && oldLines[head] === newLines[head]) head++;
+  let tail = 0;
+  while (
+    tail < shared - head &&
+    oldLines[oldLines.length - 1 - tail] === newLines[newLines.length - 1 - tail]
+  ) {
+    tail++;
+  }
+
+  const rows: DiffRow[] = [];
+  let oldLine = 1;
+  let newLine = 1;
+  for (const text of newLines.slice(0, head)) {
+    rows.push({ kind: 'context', text, oldLine: oldLine++, newLine: newLine++ });
+  }
+  for (const text of oldLines.slice(head, oldLines.length - tail)) {
+    rows.push({ kind: 'removed', text, oldLine: oldLine++ });
+  }
+  for (const text of newLines.slice(head, newLines.length - tail)) {
+    rows.push({ kind: 'added', text, newLine: newLine++ });
+  }
+  for (const text of newLines.slice(newLines.length - tail)) {
+    rows.push({ kind: 'context', text, oldLine: oldLine++, newLine: newLine++ });
+  }
+  // With one side of the middle empty, the rows are a pure insertion or deletion: exactly what diffLines would give.
+  const exact = head + tail === oldLines.length || head + tail === newLines.length;
+  return { rows, exact };
+}
+
+/** Lines as `diffLines` splits them. A CR before a line break is dropped only when endings are normalised. */
+function splitLines(value: string, normalizeLineEndings: boolean): string[] {
+  return linesOf(normalizeLineEndings ? value.replace(/\r\n/g, '\n') : value);
 }
 
 /** `a\nb\n` is two lines, `a\n\n` is two (the second empty), and `` is none. */
