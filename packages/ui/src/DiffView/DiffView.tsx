@@ -67,6 +67,8 @@ export type DiffViewLabels = {
   /** Hidden headings of the marker and text columns of the unified view. */
   change: string;
   line: string;
+  /** Shown above the table when there are too many changes to match line by line. */
+  tooDifferent: string;
 };
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
@@ -87,6 +89,7 @@ const DEFAULT_LABELS: DiffViewLabels = {
   afterLine: 'New',
   change: 'Change',
   line: 'Line',
+  tooDifferent: 'Too many changes to match line by line, so everything between the first and last change is shown as replaced.',
 };
 
 const WIDE = '(min-width: 48rem)';
@@ -130,7 +133,8 @@ const wrapped: CSSProperties = { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere
 
 /**
  * A line-level diff of two texts, unified or side by side, with the unchanged lines far from any change collapsed
- * behind a control. The comparison is jsdiff's `diffLines`; a final line break is never a change.
+ * behind a control. The comparison is jsdiff's `diffLines`, which gives up past a match limit; the changed part is then
+ * shown as replaced, with a note. A final line break is never a change.
  */
 export function DiffView({
   before,
@@ -143,7 +147,10 @@ export function DiffView({
 }: DiffViewProps) {
   const text = useMemo<DiffViewLabels>(() => ({ ...DEFAULT_LABELS, ...labels }), [labels]);
   const wide = useSyncExternalStore(subscribeWide, isWide, neverWide);
-  const rows = useMemo(() => buildRows(before, after, normalizeLineEndings), [before, after, normalizeLineEndings]);
+  const { rows, exact } = useMemo(
+    () => buildRows(before, after, normalizeLineEndings),
+    [before, after, normalizeLineEndings],
+  );
   const segments = useMemo(() => segmentRows(rows, context), [rows, context]);
   const { added, removed } = useMemo(() => summarize(rows), [rows]);
   // Which collapsed runs are open. A run is named by where it starts, so the set means something only for the
@@ -181,6 +188,7 @@ export function DiffView({
         </Text>
         <VisuallyHidden>{text.summarySpoken(added, removed)}</VisuallyHidden>
       </HStack>
+      {exact ? null : <Text type="supporting">{text.tooDifferent}</Text>}
       <NumberCellStyle value={numberCell}>
         <Table density="compact" dividers="none" verticalAlign="top" data-diff-mode={split ? 'split' : 'unified'}>
           <TableHeader>

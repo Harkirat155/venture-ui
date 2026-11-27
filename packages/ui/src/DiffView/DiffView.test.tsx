@@ -314,6 +314,21 @@ describe('DiffView labels', () => {
   });
 });
 
+describe('DiffView when matching gives up', () => {
+  const note = 'Too many changes to match line by line, so everything between the first and last change is shown as replaced.';
+
+  it('shows that note for a diff past the match limit, and not for a small one', () => {
+    // 600 lines with nothing in common is past the line-match limit.
+    const before = Array.from({ length: 600 }, (_, i) => `old ${i}`).join('\n');
+    const after = Array.from({ length: 600 }, (_, i) => `new ${i}`).join('\n');
+    const { unmount } = render(<DiffView before={before} after={after} mode="unified" />);
+    expect(screen.getByText(note)).toBeTruthy();
+    unmount();
+    render(<DiffView before={'a\nb\n'} after={'a\nB\n'} mode="unified" />);
+    expect(screen.queryByText(note)).toBeNull();
+  });
+});
+
 describe('DiffView large input', () => {
   it('renders a 2,000-line diff, with most of it collapsed, well inside the budget', () => {
     const start = performance.now();
